@@ -51,7 +51,7 @@ VRAM	EQU		0x0ff8			; グラフィックバッファの開始番地
 
 ; 画面モード情報の確認
 
-		CMP		BYTE [ES:DI+0x19],8
+		CMP		BYTE [ES:DI+0x19],80  ;故意出?
 		JNE		scrn320
 		CMP		BYTE [ES:DI+0x1b],4
 		JNE		scrn320
