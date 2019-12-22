@@ -2,6 +2,14 @@
 
 #include "bootpack.h"
 #include <stdio.h>
+#include <string.h>
+
+struct FILEINFO{
+	unsigned char name[8],ext[3],type;
+	char reserve[10];
+	unsigned short time,date,clustno;
+	unsigned int size;
+};
 
 #define KEYCMD_LED 0xed
 
@@ -474,6 +482,7 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 	timer_init(timer, &task->fifo, 1);
 	timer_settime(timer, 50);
 
+	struct FILEINFO *finfo =(struct FILEINFO *)(ADR_DISKIMG+0x002600);
 	/* 命令提示符 */
 	putfonts8_asc_sht(sheet, 8, 28, COL8_FFFFFF, COL8_000000, ">", 1);
 
@@ -552,6 +561,27 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 						}
 						sheet_refresh(sheet,8,28,8+240,28+128);
 						cursor_y=28;
+					}
+					else if(strcmp(cmdline,"DIR")==0){
+						for(x=0;x<224;x++){
+							if(finfo[x].name[0]==0x00){
+								break;
+							}
+							if(finfo[x].name[0]!=0xe5){
+								if((finfo[x].type&0x18)==0){
+									sprintf(s,"filename.ext     %7d",finfo[x].size);
+									for(y=0;y<8;y++){
+										s[y]=finfo[x].name[y];
+									}
+									s[9]=finfo[x].ext[0];
+									s[10]=finfo[x].ext[1];
+									s[11]=finfo[x].ext[2];
+									putfonts8_asc_sht(sheet,8,cursor_y,COL8_FFFFFF,COL8_000000,s,30);
+									cursor_y=cons_newline(cursor_y,sheet);
+								}
+							}
+						}
+						cursor_y=cons_newline(cursor_y,sheet);
 					}
 					else if (cmdline[0] != 0)
 					{
