@@ -2,8 +2,16 @@
 
 #include "bootpack.h"
 #include <stdio.h>
+#include <string.h>
 
 #define KEYCMD_LED 0xed
+
+struct FILEINFO{
+	unsigned char name[8],ext[3],type;
+	char reserve[10];
+	unsigned short time,data,clustno;
+	unsigned int size;
+};
 
 void make_window8(unsigned char *buf, int xsize, int ysize, char *title, char act);
 void putfonts8_asc_sht(struct SHEET *sht, int x, int y, int c, int b, char *s, int l);
@@ -468,6 +476,7 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 	int i, fifobuf[128], cursor_x = 16, cursor_c = -1, cursor_y = 28;
 	char s[30], cmdline[30];
 	int x,y;
+	struct FILEINFO *finfo=(struct FILEINFO *)(ADR_DISKIMG+0x002600);
 
 	fifo32_init(&task->fifo, 128, fifobuf, task);
 	timer = timer_alloc();
