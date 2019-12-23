@@ -474,7 +474,7 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 	struct TASK *task = task_now();
 	struct MEMMAN *memman = (struct MEMMAN *)MEMMAN_ADDR;
 	int i, fifobuf[128], cursor_x = 16, cursor_c = -1, cursor_y = 28;
-	char s[30], cmdline[30];
+	char s[30], cmdline[30],*p;
 	int x,y;
 
 	fifo32_init(&task->fifo, 128, fifobuf, task);
@@ -580,6 +580,56 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 									cursor_y=cons_newline(cursor_y,sheet);
 								}
 							}
+						}
+						cursor_y=cons_newline(cursor_y,sheet);
+					}
+					else if(cmdline[0]=='t'&&cmdline[1]=='y'&&cmdline[2]=='p'&&cmdline[3]=='e'&&cmdline[4]==' ')
+					{
+						for(y=0;y<11;y++){
+							s[y]=' ';
+						}
+						for(x=5,y=0;y<11&&cmdline[x]!=0;x++,y++){
+							if(cmdline[x]=='.'&&y<=8){
+								y=8;
+							}else{
+								s[y]=cmdline[x];
+								if('a'<=s[y]&&s[y]<='z'){
+									s[y]-=0x20;
+								}
+							}
+						}
+						for(x=0;x<224;x++){
+							if(finfo[x].name[0]==0x00){
+								break;
+							}
+							if((finfo[x].type&&0x18)==0){
+								for(y=0;y<11;y++){
+									if(finfo[x].name[y]!=s[y]){
+										goto type_next_file;
+									}
+								}
+								break;
+							}
+			type_next_file:
+							x++;
+						}
+						if(x<224&&finfo[x].name[0]!=0x00){
+							y=finfo[x].size;
+							p=(char *)(finfo[x].clustno*512+0x003e00+ADR_DISKIMG);
+							cursor_x=8;
+							for(x=0;x<y;x++){
+								s[0]=p[x];
+								s[1]=0;
+								putfonts8_asc_sht(sheet,cursor_x,cursor_y,COL8_FFFFFF,COL8_000000,s,1);
+								cursor_x+=8;
+								if(cursor_x==8+240){
+									cursor_x=8;
+									cursor_y=cons_newline(cursor_y,sheet);
+								}
+							}
+						}else{
+							putfonts8_asc_sht(sheet,8,cursor_y,COL8_FFFFFF,COL8_000000,"File not found.",15);
+							cursor_y=cons_newline(cursor_y,sheet);
 						}
 						cursor_y=cons_newline(cursor_y,sheet);
 					}
