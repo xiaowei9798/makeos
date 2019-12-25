@@ -171,6 +171,23 @@ void cons_putchar(struct CONSOLE *cons,int chr,char move)
     return;
 }
 
+void cons_putstr0(struct CONSOLE *cons ,char *s)
+{
+	for(;*s!=0;s++){
+		cons_putchar(cons,s,1);
+	}
+	return;
+}
+
+void cons_putstr1(struct CONSOILE *cons,char *s,int l)
+{
+	int i;
+	for(i=0;i<l;i++){
+		cons_putchar(cons,s,1);
+	}
+	return;
+}
+
 void cons_runcmd(char *cmdline,struct CONSOLE *cons,int *fat,unsigned int memtotal)
 {
     if(strcmp(cmdline,"MEM")==0){
@@ -183,9 +200,10 @@ void cons_runcmd(char *cmdline,struct CONSOLE *cons,int *fat,unsigned int memtot
         cmd_type(cons,fat,cmdline);
     }else if(cmdline[0]!=0){
 		if(cmd_app(cons,fat,cmdline)==0){
-			putfonts8_asc_sht(cons->sht,8,cons->cur_y,COL8_FFFFFF,COL8_000000,"Bad command.",12);
-			cons_newline(cons);
-			cons_newline(cons);
+			// putfonts8_asc_sht(cons->sht,8,cons->cur_y,COL8_FFFFFF,COL8_000000,"Bad command.",12);
+			// cons_newline(cons);
+			// cons_newline(cons);
+			cons_putstr0(cons,"Bad command.\n\n");
 		}
 	}
     return;
@@ -194,14 +212,16 @@ void cons_runcmd(char *cmdline,struct CONSOLE *cons,int *fat,unsigned int memtot
 void cmd_mem(struct CONSOLE *cons,unsigned int memtotal)
 {
     struct MEMMAN *memman = (struct MEMMAN *) MEMMAN_ADDR;
-	char s[30];
-	sprintf(s, "total   %dMB", memtotal / (1024 * 1024));
-	putfonts8_asc_sht(cons->sht, 8, cons->cur_y, COL8_FFFFFF, COL8_000000, s, 30);
-	cons_newline(cons);
-	sprintf(s, "free %dKB", memman_total(memman) / 1024);
-	putfonts8_asc_sht(cons->sht, 8, cons->cur_y, COL8_FFFFFF, COL8_000000, s, 30);
-	cons_newline(cons);
-	cons_newline(cons);
+	char s[60];
+	// sprintf(s, "total   %dMB", memtotal / (1024 * 1024));
+	// // putfonts8_asc_sht(cons->sht, 8, cons->cur_y, COL8_FFFFFF, COL8_000000, s, 30);
+	// // cons_newline(cons);
+	// sprintf(s, "free %dKB", memman_total(memman) / 1024);
+	// putfonts8_asc_sht(cons->sht, 8, cons->cur_y, COL8_FFFFFF, COL8_000000, s, 30);
+	// cons_newline(cons);
+	// cons_newline(cons);
+	sprintf(s,"total   %dMB\nfree %dKB\n\n",memtotal / (1024 * 1024),memman_total(memman) / 1024);
+	cons_putstr0(cons,s);
 	return;
 }
 
@@ -230,15 +250,16 @@ void cmd_dir(struct CONSOLE *cons)
 		}
 		if (finfo[i].name[0] != 0xe5) {
 			if ((finfo[i].type & 0x18) == 0) {
-				sprintf(s, "filename.ext   %7d", finfo[i].size);
+				sprintf(s, "filename.ext   %7d\n", finfo[i].size);
 				for (j = 0; j < 8; j++) {
 					s[j] = finfo[i].name[j];
 				}
 				s[ 9] = finfo[i].ext[0];
 				s[10] = finfo[i].ext[1];
 				s[11] = finfo[i].ext[2];
-				putfonts8_asc_sht(cons->sht, 8, cons->cur_y, COL8_FFFFFF, COL8_000000, s, 30);
-				cons_newline(cons);
+				// putfonts8_asc_sht(cons->sht, 8, cons->cur_y, COL8_FFFFFF, COL8_000000, s, 30);
+				// cons_newline(cons);
+				cons_putstr0(cons,s);
 			}
 		}
 	}
@@ -262,8 +283,9 @@ void cmd_type(struct CONSOLE *cons,int *fat,char *cmdline)
 		memman_free_4k(memman, (int) p, finfo->size);
 	} else {
 		/* ファイルが見つからなかった場合 */
-		putfonts8_asc_sht(cons->sht, 8, cons->cur_y, COL8_FFFFFF, COL8_000000, "File not found.", 15);
-		cons_newline(cons);
+		// putfonts8_asc_sht(cons->sht, 8, cons->cur_y, COL8_FFFFFF, COL8_000000, "File not found.", 15);
+		// cons_newline(cons);
+		cons_putstr0(cons,"File is not found.\n");
 	}
 	cons_newline(cons);
 	return;
