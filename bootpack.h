@@ -31,7 +31,8 @@ void asm_inthandler2c(void);
 unsigned int memtest_sub(unsigned int start, unsigned int end);
 void farjmp(int eip, int cs);
 void farcall(int eip,int cs);
-void asm_cons_putchar(void);
+// void asm_cons_putchar(void);
+void asm_hrb_api(void);
 
 /* fifo.c */
 struct FIFO32 {
@@ -245,7 +246,7 @@ void cmd_cls(struct CONSOLE *cons);
 void cmd_dir(struct CONSOLE *cons);
 void cmd_type(struct CONSOLE *cons,int *fat,char *cmdline);
 int cmd_app(struct CONSOLE *cons, int *fat,char *cmdline);
-
+void hrb_api(int edi,int esi,int edp,int esp,int ebx,int edx,int ecx,int eax);
 
 /* fife.c */
 struct FILEINFO
