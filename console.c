@@ -181,7 +181,7 @@ void cons_runcmd(char *cmdline,struct CONSOLE *cons,int *fat,unsigned int memtot
         cmd_dir(cons);
     }else if(strncmp(cmdline,"TYPE ",5)==0){
         cmd_type(cons,fat,cmdline);
-    }else if(strcmp(cmdline,"HLT")==0){
+    }else if(strcmp(cmdline,"HELLO")==0){
         cmd_hlt(cons,fat);
     }else if(cmdline[0]!=0){
         putfonts8_asc_sht(cons->sht,8,cons->cur_y,COL8_FFFFFF,COL8_000000,"Bad command.",12);
@@ -272,7 +272,7 @@ void cmd_type(struct CONSOLE *cons,int *fat,char *cmdline)
 void cmd_hlt(struct CONSOLE *cons,int *fat)
 {
     struct MEMMAN *memman = (struct MEMMAN *) MEMMAN_ADDR;
-	struct FILEINFO *finfo = file_search("HLT.HRB", (struct FILEINFO *) (ADR_DISKIMG + 0x002600), 224);
+	struct FILEINFO *finfo = file_search("HELLO.HRB", (struct FILEINFO *) (ADR_DISKIMG + 0x002600), 224);
 	struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *) ADR_GDT;
 	char *p;
 	if (finfo != 0) {
