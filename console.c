@@ -15,6 +15,7 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
     cons.cur_x=8;
     cons.cur_y=28;
     cons.cur_c=-1;
+    *((int *)0x0fec) = (int) &cons;
 
 	fifo32_init(&task->fifo, 128, fifobuf, task);
 	timer = timer_alloc();
@@ -172,13 +173,13 @@ void cons_putchar(struct CONSOLE *cons,int chr,char move)
 
 void cons_runcmd(char *cmdline,struct CONSOLE *cons,int *fat,unsigned int memtotal)
 {
-    if(strcmp(cmdline,"MEN")==0){
+    if(strcmp(cmdline,"MEM")==0){
         cmd_mem(cons,memtotal);
     }else if(strcmp(cmdline,"CLS")==0){
         cmd_cls(cons);
     }else if(strcmp(cmdline,"DIR")==0){
         cmd_dir(cons);
-    }else if(strcmp(cmdline,"TYPE")==0){
+    }else if(strncmp(cmdline,"TYPE ",5)==0){
         cmd_type(cons,fat,cmdline);
     }else if(strcmp(cmdline,"HLT")==0){
         cmd_hlt(cons,fat);
@@ -279,7 +280,7 @@ void cmd_hlt(struct CONSOLE *cons,int *fat)
 		p = (char *) memman_alloc_4k(memman, finfo->size);
 		file_loadfile(finfo->clustno, finfo->size, p, fat, (char *) (ADR_DISKIMG + 0x003e00));
 		set_segmdesc(gdt + 1003, finfo->size - 1, (int) p, AR_CODE32_ER);
-		farjmp(0, 1003 * 8);
+		farcall(0, 1003 * 8);
 		memman_free_4k(memman, (int) p, finfo->size);
 	} else {
 		/* ファイルが見つからなかった場合 */

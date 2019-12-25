@@ -1,7 +1,7 @@
 [BITS 32]
-    CLI
+        MOV     AL,'A'
+        CALL    2*8:0x0b85
 fin:
-    HLT
-    JMP fin
+        RETF
 
     
