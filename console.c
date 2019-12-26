@@ -174,16 +174,16 @@ void cons_putchar(struct CONSOLE *cons,int chr,char move)
 void cons_putstr0(struct CONSOLE *cons ,char *s)
 {
 	for(;*s!=0;s++){
-		cons_putchar(cons,s,1);
+		cons_putchar(cons,*s,1);
 	}
 	return;
 }
 
-void cons_putstr1(struct CONSOILE *cons,char *s,int l)
+void cons_putstr1(struct CONSOLE *cons,char *s,int l)
 {
 	int i;
 	for(i=0;i<l;i++){
-		cons_putchar(cons,s,1);
+		cons_putchar(cons,s[i],1);
 	}
 	return;
 }
@@ -318,6 +318,7 @@ int cmd_app(struct CONSOLE *cons, int *fat,char *cmdline)
 	}	
 	if(finfo!=0){
 		p=(char *)memman_alloc_4k(memman,finfo->size);
+		*((int *)0xfe8)=(int) p;
 		file_loadfile(finfo->clustno,finfo->size,p,fat,(char *)(ADR_DISKIMG+0x003e00));
 		set_segmdesc(gdt+1003,finfo->size-1,(int)p ,AR_CODE32_ER);
 		farcall(0,1003*8);
@@ -331,12 +332,14 @@ int cmd_app(struct CONSOLE *cons, int *fat,char *cmdline)
 void hrb_api(int edi,int esi,int edp,int esp,int ebx,int edx,int ecx,int eax)
 {
 	struct CONSOLE *cons =(struct CONSOLE *)*((int *)0x0fec);
+	int	cs_base=*((int *)0xfe8);
+
 	if(edx==1){
 		cons_putchar(cons,eax&0xff,1);
 	}else if(edx==2){
-		cons_putstr0(cons,(char *)ebx);
+		cons_putstr0(cons,(char *)ebx+cs_base);
 	}else if(edx==3){
-		cons_putstr1(cons,(char *)ebx,ecx);
+		cons_putstr1(cons,(char *)ebx+cs_base,ecx);
 	}
 	return;
 }
