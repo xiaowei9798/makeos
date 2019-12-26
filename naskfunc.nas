@@ -1,10 +1,10 @@
 ; naskfunc
 ; TAB=4
 
-[FORMAT "WCOFF"]				; オブジェクトファイルを作るモード	
-[INSTRSET "i486p"]				; 486の命令まで使いたいという記述
-[BITS 32]						; 32ビットモード用の機械語を作らせる
-[FILE "naskfunc.nas"]			; ソースファイル名情報
+[FORMAT "WCOFF"]				; 生成?象文件的模式	
+[INSTRSET "i486p"]				; 使用486兼容指令集
+[BITS 32]						; 生成32位模式机器?言
+[FILE "naskfunc.nas"]			; 源文件名信息
 
 		GLOBAL	_io_hlt, _io_cli, _io_sti, _io_stihlt
 		GLOBAL	_io_in8,  _io_in16,  _io_in32
