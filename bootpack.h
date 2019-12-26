@@ -33,6 +33,7 @@ void farjmp(int eip, int cs);
 void farcall(int eip,int cs);
 // void asm_cons_putchar(void);
 void asm_hrb_api(void);
+void start_app(int eip,int cs,int esp,int ds);
 
 /* fifo.c */
 struct FIFO32 {
