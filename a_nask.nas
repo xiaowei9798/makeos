@@ -5,6 +5,7 @@
 
         GLOBAL  _api_putchar
         GLOBAL  _api_end
+        GLOBAL  _api_putstr0
 
 [SECTION .text]
 
@@ -17,5 +18,13 @@ _api_putchar:
 _api_end:
         MOV     EDX,4
         INT     0x40
+
+_api_putstr0:
+        PUSH    EBX
+        MOV     EDX,2
+        MOV     EBX,[ESP+8]
+        INT     0x40
+        POP     EBX
+        RET
 
 

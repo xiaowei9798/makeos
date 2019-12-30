@@ -46,11 +46,14 @@ bootpack.bim : $(OBJS_BOOTPACK) Makefile
 bootpack.hrb : bootpack.bim Makefile
 	$(BIM2HRB) bootpack.bim bootpack.hrb 0
 
+haribote.sys : asmhead.bin bootpack.hrb Makefile
+	copy /B asmhead.bin+bootpack.hrb haribote.sys
+
+
 a.bim : a.obj a_nask.obj Makefile
 	$(OBJ2BIM) @$(RULEFILE) out:a.bim map:a.map a.obj a_nask.obj
 a.hrb : a.bim Makefile
 	$(BIM2HRB) a.bim a.hrb 0
-
 
 hello.hrb:hello.nas Makefile
 	$(NASK) hello.nas hello.hrb hello.lst
@@ -62,6 +65,16 @@ hello3.bim : hello3.obj a_nask.obj Makefile
 	$(OBJ2BIM) @$(RULEFILE) out:hello3.bim map:hello3.map hello3.obj a_nask.obj
 hello3.hrb : hello3.bim Makefile
 	$(BIM2HRB) hello3.bim hello3.hrb 0
+
+hello4.bim : hello4.obj a_nask.obj Makefile
+	$(OBJ2BIM) @$(RULEFILE) out:hello4.bim stack:1k map:hello4.map hello4.obj a_nask.obj
+hello4.hrb : hello4.bim Makefile
+	$(BIM2HRB) hello4.bim hello4.hrb 0
+
+hello5.bim : hello5.obj Makefile
+	$(OBJ2BIM) @$(RULEFILE) out:hello5.bim stack:1k map:hello5.map hello5.obj
+hello5.hrb : hello5.bim Makefile
+	$(BIM2HRB) hello5.bim hello5.hrb 0
 
 crack1.bim : crack1.obj a_nask.obj Makefile
 	$(OBJ2BIM) @$(RULEFILE) out:crack1.bim map:crack1.map crack1.obj a_nask.obj
@@ -78,16 +91,14 @@ bug2.bim : bug2.obj a_nask.obj Makefile
 bug2.hrb : bug2.bim Makefile
 	$(BIM2HRB) bug2.bim bug2.hrb 0
 
-crack2.hrb : crack2.nas Makefile
-	$(NASK) crack2.nas crack2.hrb crack2.lst
+# crack2.hrb : crack2.nas Makefile
+# 	$(NASK) crack2.nas crack2.hrb crack2.lst
 
-crack3.hrb : crack3.nas Makefile
-	$(NASK) crack3.nas crack3.hrb crack3.lst
+# crack3.hrb : crack3.nas Makefile
+# 	$(NASK) crack3.nas crack3.hrb crack3.lst
 
-haribote.sys : asmhead.bin bootpack.hrb Makefile
-	copy /B asmhead.bin+bootpack.hrb haribote.sys
-
-haribote.img : ipl10.bin haribote.sys hello.hrb hello2.hrb a.hrb hello3.hrb crack1.hrb crack2.hrb crack3.hrb bug1.hrb bug2.hrb Makefile
+haribote.img : ipl10.bin haribote.sys hello.hrb hello2.hrb a.hrb hello3.hrb crack1.hrb bug1.hrb \
+            bug2.hrb hello4.hrb hello5.hrb Makefile
 	$(EDIMG)   imgin:../z_tools/fdimg0at.tek \
 		wbinimg src:ipl10.bin len:512 from:0 to:0 \
 		copy from:haribote.sys to:@: \
@@ -98,10 +109,10 @@ haribote.img : ipl10.bin haribote.sys hello.hrb hello2.hrb a.hrb hello3.hrb crac
 		copy from:a.hrb to:@: \
 		copy from:hello3.hrb to:@: \
 		copy from:crack1.hrb to:@: \
-		copy from:crack2.hrb to:@: \
-		copy from:crack3.hrb to:@: \
 		copy from:bug1.hrb to:@: \
 		copy from:bug2.hrb to:@: \
+		copy from:hello4.hrb to:@: \
+		copy from:hello5.hrb to:@: \
 		imgout:haribote.img
 
 # ˆê”Ê‹K‘¥
