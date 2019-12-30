@@ -15,14 +15,15 @@
 		GLOBAL	_load_tr
 		GLOBAL	_asm_inthandler20, _asm_inthandler21
 		GLOBAL	_asm_inthandler27, _asm_inthandler2c
-		GLOBAL  _asm_inthandler0d
+		GLOBAL  _asm_inthandler0d, _asm_inthandler0c
 		GLOBAL	_memtest_sub
 		GLOBAL	_farjmp
 		GLOBAL	_farcall
 		GLOBAL	_asm_hrb_api, _start_app
+		GLOBAL  _asm_end_app
 		EXTERN	_inthandler20, _inthandler21
 		EXTERN	_inthandler27, _inthandler2c
-		EXTERN  _inthandler0d
+		EXTERN  _inthandler0d,_inthandler0c
 		EXTERN	_hrb_api
 
 [SECTION .text]
@@ -132,7 +133,7 @@ _asm_inthandler20:
 		IRETD
 
 _asm_inthandler21:
-				PUSH	ES
+		PUSH	ES
 		PUSH	DS
 		PUSHAD
 		MOV		EAX,ESP
@@ -148,7 +149,7 @@ _asm_inthandler21:
 		IRETD
 
 _asm_inthandler27:
-				PUSH	ES
+		PUSH	ES
 		PUSH	DS
 		PUSHAD
 		MOV		EAX,ESP
@@ -180,7 +181,7 @@ _asm_inthandler2c:
 		IRETD
 
 _asm_inthandler0d:
-				PUSH	ES
+		PUSH	ES
 		PUSH	DS
 		PUSHAD
 		MOV		EAX,ESP
@@ -189,6 +190,25 @@ _asm_inthandler0d:
 		MOV		DS,AX
 		MOV		ES,AX
 		CALL	_inthandler0d
+		CMP 	EAX,0
+		JNE 	end_app
+		POP		EAX
+		POPAD
+		POP		DS
+		POP		ES
+		ADD 	ESP,4       ;ç›INT 0x0díÜé˘óvâ¡ì¸?ãÂ
+		IRETD
+
+_asm_inthandler0c:
+		PUSH	ES
+		PUSH	DS
+		PUSHAD
+		MOV		EAX,ESP
+		PUSH	EAX
+		MOV		AX,SS
+		MOV		DS,AX
+		MOV		ES,AX
+		CALL	_inthandler0c
 		CMP 	EAX,0
 		JNE 	end_app
 		POP		EAX
@@ -284,5 +304,9 @@ _start_app:
 		PUSH  	EAX
 		RETF
 
-
+_asm_end_app:
+		MOV 	ESP,[EAX]
+		MOV 	DWORD [EAX+4],0
+		POPAD
+		RET
 

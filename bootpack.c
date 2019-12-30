@@ -21,6 +21,7 @@ void HariMain(void)
 	struct SHEET *sht_back, *sht_mouse, *sht_win, *sht_cons;
 	struct TASK *task_a, *task_cons;
 	struct TIMER *timer;
+	struct CONSOLE *cons;
 	static char keytable0[0x80] = {
 		0, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '^', 0, 0,
 		'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '@', '[', 0, 0, 'A', 'S',
@@ -275,6 +276,15 @@ void HariMain(void)
 						fifo32_put(&task_cons->fifo, 10 + 256);
 					}
 				}
+				if (i == 256 + 0x3b && key_shift != 0 && task_cons->tss.ss0 != 0)
+				{
+					cons = (struct CONSOLE *) *((int *)0x0fec);
+					cons_putstr0(cons, "\nBreak(key):\n");
+					io_cli();
+					task_cons->tss.eax = (int) &(task_cons->tss.esp0);
+					task_cons->tss.eip = (int) asm_end_app;
+					io_sti();
+				}
 				/* 重新显示光标 */
 				if (cursor_c >= 0)
 				{
@@ -357,8 +367,6 @@ void HariMain(void)
 		}
 	}
 }
-
-
 
 
 
