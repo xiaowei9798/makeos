@@ -14,4 +14,8 @@ _api_putchar:
         INT     0x40
         RET
 
+_api_end:
+        MOV     EDX,4
+        INT     0x40
+
 
