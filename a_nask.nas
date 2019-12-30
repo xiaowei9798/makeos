@@ -4,7 +4,7 @@
 [FILE "a_nask.nas"] ;源文件信息
 
         GLOBAL  _api_putchar
-
+        GLOBAL  _api_end
 
 [SECTION .text]
 
