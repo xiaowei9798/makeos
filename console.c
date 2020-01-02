@@ -38,7 +38,7 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 			i = fifo32_get(&task->fifo);
 			io_sti();
 			if (i <= 1)
-			{ /* 光标用定时器 */
+			{ /* 光�??用定时器 */
 				if (i != 0)
 				{
 					timer_init(timer, &task->fifo, 0); /* 初始化0 */
@@ -67,7 +67,7 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 				boxfill8(sheet->buf, sheet->bxsize, COL8_000000, cons.cur_x, 28, cons.cur_x + 7, 43);
 			}
 			if (256 <= i && i <= 511)
-			{ /* 键盘数据（任务A发来） */
+			{ /* 键盘数据?��任务A发来?�? */
 				if (i == 8 + 256)
 				{
 					/* 退格键 */
@@ -89,7 +89,7 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 				}
 				else
 				{
-					/* 一般文字 */
+					/* 一般�?�? */
 					if (cons.cur_x < 240)
 					{
 						cmdline[cons.cur_x / 8 - 2] = i - 256;
@@ -98,7 +98,7 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 					}
 				}
 			}
-			/* 重新显示光标 */
+			/* 重新显示光�?? */
 			if (cons.cur_c >= 0)
 			{
 				boxfill8(sheet->buf, sheet->bxsize, cons.cur_c, cons.cur_x, cons.cur_y, cons.cur_x + 7, cons.cur_y + 15);
@@ -305,7 +305,7 @@ void cmd_type(struct CONSOLE *cons, int *fat, char *cmdline)
 	int i;
 	if (finfo != 0)
 	{
-		/* ファイルが見つかった場合 */
+		/* ファイルが見つかった�?��? */
 		p = (char *)memman_alloc_4k(memman, finfo->size);
 		file_loadfile(finfo->clustno, finfo->size, p, fat, (char *)(ADR_DISKIMG + 0x003e00));
 		for (i = 0; i < finfo->size; i++)
@@ -316,7 +316,7 @@ void cmd_type(struct CONSOLE *cons, int *fat, char *cmdline)
 	}
 	else
 	{
-		/* ファイルが見つからなかった場合 */
+		/* ファイルが見つからなかった�?��? */
 		// putfonts8_asc_sht(cons->sht, 8, cons->cur_y, COL8_FFFFFF, COL8_000000, "File not found.", 15);
 		// cons_newline(cons);
 		cons_putstr0(cons, "File is not found.\n");
@@ -337,7 +337,7 @@ int cmd_app(struct CONSOLE *cons, int *fat, char *cmdline)
 	for (i = 0; i < 13; i++)
 	{
 		if (cmdline[i] <= ' ')
-		{ //空格的ASCLL为32，NULL为0，32一下的都是控制字符
+		{ //空格的ASCLL为32?��NULL为0?�?32一下的都是控制字符
 			break;
 		}
 		name[i] = cmdline[i];
@@ -388,9 +388,9 @@ int cmd_app(struct CONSOLE *cons, int *fat, char *cmdline)
 
 int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int eax)
 {
-	struct CONSOLE *cons = (struct CONSOLE *) *((int *)0x0fec); //这个地址保存的是命名行CONS所在的地址
-	struct SHTCTL *shtctl = (struct SHTCTL *) *((int *)0x0fe4); //这个地址保存的是图层SHTCTL所在的地址
-	int ds_base = *((int *)0xfe8);							   //这个地址保存的是应用程序所在的地址,因为是通过应用程序来对缓冲区大小和窗口名字赋值,相当于指向应用程序的指针
+	struct CONSOLE *cons = (struct CONSOLE *) *((int *)0x0fec); //这个地址保存的是命名行CONS所在�?地址
+	struct SHTCTL *shtctl = (struct SHTCTL *) *((int *)0x0fe4); //这个地址保存的是图层SHTCTL所在�?地址
+	int ds_base = *((int *)0xfe8);							   //这个地址保存的是应用程序所在�?地址,�?为是通�?应用程序来对缓�?�区大小和窗口名字赋值,相当于指向应用程序的�?�?
 	struct TASK *task = task_now();
 	struct SHEET *sht;
 	int *reg = &eax + 1;
@@ -422,15 +422,21 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 	}
 	else if (edx == 6)
 	{
-		sht = (struct SHEET *)ebx;
+		sht = (struct SHEET *) (ebx & 0xfffffffe);
 		putfonts8_asc(sht->buf, sht->bxsize, esi, edi, eax, (char *)ebp + ds_base);
-		sheet_refresh(sht, esi, edi, esi + ecx * 8,edi + 16);
+		if((ebx & 1)==0)
+		{
+			sheet_refresh(sht, esi, edi, esi + ecx * 8,edi + 16);
+		}
 	}
 	else if (edx == 7)
 	{
-		sht = (struct SHEET *)ebx;
+		sht = (struct SHEET *) (ebx & 0xfffffffe);
 		boxfill8(sht->buf, sht->bxsize, ebp, eax, ecx, esi, edi);
-		sheet_refresh(sht, eax, ecx, esi + 1, edi + 1);
+		if((ebx & 1)==0)
+		{
+			sheet_refresh(sht, eax, ecx, esi + 1, edi + 1);
+		}
 	}
 	else if(edx==8)
 	{
@@ -450,9 +456,17 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 	}
 	else if(edx==11)
 	{
-		sht=(struct SHEET *)ebx;
+		sht=(struct SHEET *) (ebx & 0xfffffffe);
 		sht->buf[sht->bxsize * edi+esi]=eax;
-		sheet_refresh(sht,esi,edi,esi+1,edi+1);
+		if((ebx & 1)==0)
+		{
+			sheet_refresh(sht,esi,edi,esi+1,edi+1);
+		}
+	}
+	else if(edx==12)
+	{
+		sht=(struct SHEET *)ebx;
+		sheet_refresh(sht,eax,ecx,esi,edi);
 	}
 	return 0;
 }

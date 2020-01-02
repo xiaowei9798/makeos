@@ -76,15 +76,15 @@ hello5.bim : hello5.obj Makefile
 hello5.hrb : hello5.bim Makefile
 	$(BIM2HRB) hello5.bim hello5.hrb 0
 
-crack1.bim : crack1.obj a_nask.obj Makefile
-	$(OBJ2BIM) @$(RULEFILE) out:crack1.bim map:crack1.map crack1.obj a_nask.obj
-crack1.hrb : crack1.bim Makefile
-	$(BIM2HRB) crack1.bim crack1.hrb 0
+# crack1.bim : crack1.obj a_nask.obj Makefile
+# 	$(OBJ2BIM) @$(RULEFILE) out:crack1.bim map:crack1.map crack1.obj a_nask.obj
+# crack1.hrb : crack1.bim Makefile
+# 	$(BIM2HRB) crack1.bim crack1.hrb 0
 
-bug2.bim : bug2.obj a_nask.obj Makefile
-	$(OBJ2BIM) @$(RULEFILE) out:bug2.bim map:bug2.map bug2.obj a_nask.obj
-bug2.hrb : bug2.bim Makefile
-	$(BIM2HRB) bug2.bim bug2.hrb 0
+# bug2.bim : bug2.obj a_nask.obj Makefile
+# 	$(OBJ2BIM) @$(RULEFILE) out:bug2.bim map:bug2.map bug2.obj a_nask.obj
+# bug2.hrb : bug2.bim Makefile
+# 	$(BIM2HRB) bug2.bim bug2.hrb 0
 
 winhelo.bim : winhelo.obj a_nask.obj Makefile
 	$(OBJ2BIM) @$(RULEFILE) out:winhelo.bim stack:1k map:winhelo.map winhelo.obj a_nask.obj
@@ -99,13 +99,12 @@ winhelo2.hrb : winhelo2.bim Makefile
 winhelo3.bim : winhelo3.obj a_nask.obj Makefile
 	$(OBJ2BIM) @$(RULEFILE) out:winhelo3.bim stack:1k map:winhelo3.map winhelo3.obj a_nask.obj
 winhelo3.hrb : winhelo3.bim Makefile
-	$(BIM2HRB) winhelo3.bim winhelo3.hrb 40
+	$(BIM2HRB) winhelo3.bim winhelo3.hrb 40k
 
 start1.bim : start1.obj a_nask.obj Makefile
 	$(OBJ2BIM) @$(RULEFILE) out:start1.bim stack:1k map:start1.map start1.obj a_nask.obj
 start1.hrb : start1.bim Makefile
-	$(BIM2HRB) start1.bim start1.hrb 47
-
+	$(BIM2HRB) start1.bim start1.hrb 47k
 
 # crack2.hrb : crack2.nas Makefile
 # 	$(NASK) crack2.nas crack2.hrb crack2.lst
@@ -113,8 +112,8 @@ start1.hrb : start1.bim Makefile
 # crack3.hrb : crack3.nas Makefile
 # 	$(NASK) crack3.nas crack3.hrb crack3.lst
 
-haribote.img : ipl10.bin haribote.sys hello.hrb hello2.hrb a.hrb hello3.hrb crack1.hrb \
-            bug2.hrb hello4.hrb hello5.hrb winhelo.hrb winhelo2.hrb winhelo3.hrb start1.hrb Makefile
+haribote.img : ipl10.bin haribote.sys hello.hrb hello2.hrb a.hrb hello3.hrb \
+            hello4.hrb hello5.hrb winhelo.hrb winhelo2.hrb winhelo3.hrb start1.hrb Makefile
 	$(EDIMG)   imgin:../z_tools/fdimg0at.tek \
 		wbinimg src:ipl10.bin len:512 from:0 to:0 \
 		copy from:haribote.sys to:@: \
@@ -124,8 +123,6 @@ haribote.img : ipl10.bin haribote.sys hello.hrb hello2.hrb a.hrb hello3.hrb crac
 		copy from:hello2.hrb to:@: \
 		copy from:a.hrb to:@: \
 		copy from:hello3.hrb to:@: \
-		copy from:crack1.hrb to:@: \
-		copy from:bug2.hrb to:@: \
 		copy from:hello4.hrb to:@: \
 		copy from:hello5.hrb to:@: \
 		copy from:winhelo.hrb to:@: \
