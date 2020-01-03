@@ -16,6 +16,7 @@
 	GLOBAL	_api_refreshwin
         GLOBAL  _api_linewin
         GLOBAL  _api_closewin
+        GLOBAL  _api_getkey
 	
 [SECTION .text]
 
@@ -181,6 +182,11 @@ _api_closewin:
         POP     EBX
         RET
 
+_api_getkey:
+        MOV     EDX,15
+        MOV     EAX,[ESP+4]
+        INT     0x40
+        RET
 
 
 	

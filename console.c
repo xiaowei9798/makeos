@@ -314,6 +314,7 @@ int cmd_app(struct CONSOLE *cons, int *fat, char *cmdline)
 int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int eax)
 {
 	int ds_base = *((int *) 0xfe8);
+	int i;
 	struct TASK *task = task_now();
 	struct CONSOLE *cons = (struct CONSOLE *) *((int *) 0x0fec);
 	struct SHTCTL *shtctl = (struct SHTCTL *) *((int *) 0x0fe4);
@@ -379,6 +380,36 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 	}
 	else if(edx==14){
 		sheet_free((struct SHEET *) ebx);
+	}
+	else if(edx==15){
+		for(;;){
+			io_cli();
+			if(fifo32_status(&task->fifo)==0){
+				if(eax!=0){
+					task_sleep(task);
+				}else{
+					io_sti();
+					reg[7]=-1;
+					return 0;
+				}
+			}
+			i=fifo32_get(&task->fifo);
+			io_sti();
+			if(i<=1){
+				timer_init(cons->timer,&task->fifo,1);
+				timer_settime(cons->timer,50);
+			}
+			if(i==2){
+				cons->cur_c=COL8_FFFFFF;
+			}
+			if(i==3){
+				cons->cur_c=-1;
+			}
+			if(256<=i && i<=511){
+				reg[7]=i-256;
+				return 0;
+			}
+		}
 	}
 	return 0;
 }
