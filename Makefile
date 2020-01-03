@@ -115,6 +115,11 @@ clwin.bim : clwin.obj a_nask.obj Makefile
 	$(OBJ2BIM) @$(RULEFILE) out:clwin.bim stack:1k map:clwin.map clwin.obj a_nask.obj
 clwin.hrb : clwin.bim Makefile
 	$(BIM2HRB) clwin.bim clwin.hrb 47k
+
+walk.bim : walk.obj a_nask.obj Makefile
+	$(OBJ2BIM) @$(RULEFILE) out:walk.bim stack:1k map:walk.map walk.obj a_nask.obj
+walk.hrb : walk.bim Makefile
+	$(BIM2HRB) walk.bim walk.hrb 47k
 # crack2.hrb : crack2.nas Makefile
 # 	$(NASK) crack2.nas crack2.hrb crack2.lst
 
@@ -122,7 +127,7 @@ clwin.hrb : clwin.bim Makefile
 # 	$(NASK) crack3.nas crack3.hrb crack3.lst
 
 haribote.img : ipl10.bin haribote.sys hello.hrb hello2.hrb a.hrb hello3.hrb lines.hrb \
-            hello4.hrb hello5.hrb winhelo.hrb winhelo2.hrb winhelo3.hrb stars.hrb clwin.hrb Makefile
+            hello4.hrb hello5.hrb winhelo.hrb winhelo2.hrb winhelo3.hrb stars.hrb clwin.hrb walk.hrb Makefile
 	$(EDIMG)   imgin:../z_tools/fdimg0at.tek \
 		wbinimg src:ipl10.bin len:512 from:0 to:0 \
 		copy from:haribote.sys to:@: \
@@ -140,6 +145,7 @@ haribote.img : ipl10.bin haribote.sys hello.hrb hello2.hrb a.hrb hello3.hrb line
 		copy from:stars.hrb to:@: \
 		copy from:lines.hrb to:@: \
 		copy from:clwin.hrb to:@: \
+		copy from:walk.hrb to:@: \
 		imgout:haribote.img
 
 # ˆê”Ê‹K‘¥
