@@ -22,6 +22,11 @@ void HariMain(void)
 	struct TASK *task_a, *task_cons;
 	struct TIMER *timer;
 	struct CONSOLE *cons;
+
+	int j,x,y;
+	int mmx=-1,mmy=-1;
+	struct SHEET *sht=0;
+
 	static char keytable0[0x80] = {
 		0, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '^', 0, 0,
 		'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '@', '[', 0, 0, 'A', 'S',
@@ -63,7 +68,7 @@ void HariMain(void)
 	task_a = task_init(memman);
 	fifo.task = task_a;
 	task_run(task_a, 1, 2);
-	*((int *) 0x0fe4)=(int) shtctl;
+	*((int *)0x0fe4) = (int)shtctl;
 
 	/* sht_back */
 	sht_back = sheet_alloc(shtctl);
@@ -279,12 +284,16 @@ void HariMain(void)
 				}
 				if (i == 256 + 0x3b && key_shift != 0 && task_cons->tss.ss0 != 0)
 				{
-					cons = (struct CONSOLE *) *((int *)0x0fec);
+					cons = (struct CONSOLE *)*((int *)0x0fec);
 					cons_putstr0(cons, "\nBreak(key):\n");
 					io_cli();
-					task_cons->tss.eax = (int) &(task_cons->tss.esp0);
-					task_cons->tss.eip = (int) asm_end_app;
+					task_cons->tss.eax = (int)&(task_cons->tss.esp0);
+					task_cons->tss.eip = (int)asm_end_app;
 					io_sti();
+				}
+				if (i == 256 + 0x57 && shtctl->top > 2)
+				{
+					sheet_updown(shtctl->sheets[1], shtctl->top - 1);
 				}
 				/* 重新显示光标 */
 				if (cursor_c >= 0)
@@ -336,7 +345,42 @@ void HariMain(void)
 					if ((mdec.btn & 0x01) != 0)
 					{
 						/* 点击鼠标移动sht_win图层 */
-						sheet_slide(sht_win, mx - 80, my - 8);
+						// sheet_slide(sht_win, mx - 80, my - 8);
+						if(mmx<0){
+							for(j=shtctl->top-1;j>0;j--){
+								sht=shtctl->sheets[j];
+								x=mx-sht->vx0;
+								y=my-sht->vy0;
+								if(0<=x && x<sht->bxsize && 0<=y && y<sht->bysize){
+									if(sht->buf[y*sht->bxsize+x]!=sht->col_inv){
+										sheet_updown(sht,shtctl->top-1);
+										if(3<=x && x<sht->bxsize-3 && 3<=y && y<21){
+											mmx=mx;
+											mmy=my;
+										}
+										if(sht->bxsize-21<=x && x<sht->bxsize-5 && 5<=y && y<19){
+											if(sht->task!=0){
+												cons=(struct CONSOLE *) *((int *) 0x0fec);
+												cons_putstr0(cons,"\nBreak(mouse) :\n");
+												io_cli();
+												task_cons->tss.eax=(int) &(task_cons->tss.esp0);
+												task_cons->tss.eip=(int) asm_end_app;
+												io_sti();
+											}
+										}
+										break;
+									}
+								}
+							}
+						}else{
+							x=mx-mmx;
+							y=my-mmy;
+							sheet_slide(sht,sht->vx0+x,sht->vy0+y);
+							mmx=mx;
+							mmy=my;
+						}
+					}else{
+						mmx=-1;
 					}
 				}
 			}
@@ -368,6 +412,3 @@ void HariMain(void)
 		}
 	}
 }
-
-
-
