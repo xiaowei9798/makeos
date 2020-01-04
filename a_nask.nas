@@ -17,6 +17,7 @@
         GLOBAL  _api_linewin
         GLOBAL  _api_closewin
         GLOBAL  _api_getkey
+        GLOBAL  _api_alloctimer,_api_inittimer,_api_settimer,_api_freetimer
 	
 [SECTION .text]
 
@@ -188,5 +189,35 @@ _api_getkey:
         INT     0x40
         RET
 
+_api_alloctimer:
+        MOV     EDX,16
+        INT     0x40
+        RET
+
+_api_inittimer:
+        PUSH    EBX
+        MOV     EDX,17
+        MOV     EBX,[ESP+8]
+        MOV     EAX,[ESP+12]
+        INT     0x40
+        POP     EBX
+        RET
+
+_api_settimer:
+        PUSH    EBX
+        MOV     EDX,18
+        MOV     EBX,[ESP+8]
+        MOV     EAX,[ESP+12]
+        INT     0x40
+        POP     EBX
+        RET
+
+_api_freetimer:
+        PUSH    EBX
+        MOV     EDX,19
+        MOV     EBX,[ESP+8]
+        INT     0x40
+        POP     EBX
+        RET
 
 	
