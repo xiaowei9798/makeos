@@ -110,7 +110,7 @@ void HariMain(void)
 	/* sht_win */
 	// sht_win = sheet_alloc(shtctl);
 	// buf_win = (unsigned char *)memman_alloc_4k(memman, 160 * 52);
-	// sheet_setbuf(sht_win, buf_win, 144, 52, -1); /* 透明色 */
+	// sheet_setbuf(sht_win, buf_win, 144, 52, -1); /* -1表示没有透明色 */
 	// make_window8(buf_win, 144, 52, "task_a", 1);
 	// make_textbox8(sht_win, 8, 28, 128, 16, COL8_FFFFFF);
 	// cursor_x = 8;
@@ -121,8 +121,8 @@ void HariMain(void)
 
 	/* sht_mouse */
 	sht_mouse = sheet_alloc(shtctl);
-	sheet_setbuf(sht_mouse, buf_mouse, 16, 16, 99);
-	init_mouse_cursor8(buf_mouse, 99);
+	sheet_setbuf(sht_mouse, buf_mouse, 16, 16, 99);    //鼠标透明色号99
+	init_mouse_cursor8(buf_mouse, 99);                 //鼠标背景色号99
 	mx = (binfo->scrnx - 16) / 2; /* 画面中心位置计算 */
 	my = (binfo->scrny - 28 - 16) / 2;
 
