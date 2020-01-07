@@ -61,7 +61,7 @@ void sheet_setbuf(struct SHEET *sht, unsigned char *buf, int xsize, int ysize, i
 
 void sheet_refreshmap(struct SHTCTL *ctl, int vx0, int vy0, int vx1, int vy1, int h0)
 {
-	int h, bx, by, vx, vy, bx0, by0, bx1, by1;
+	int h, bx, by, vx, vy, bx0, by0, bx1, by1, sid4, *p;
 	unsigned char *buf, sid, *map = ctl->map;
 	struct SHEET *sht;
 	if (vx0 < 0)
@@ -106,19 +106,37 @@ void sheet_refreshmap(struct SHTCTL *ctl, int vx0, int vy0, int vx1, int vy1, in
 			by1 = sht->bysize;
 		}
 		if (sht->col_inv == -1)
-		{
-			for (by = by0; by < by1; by++)
-			{
-				vy = sht->vy0 + by;
-				for (bx = bx0; bx < bx1; bx++)
+		{  //不含透明色??
+			if ((sht->vx0 & 3) == 0 && (bx0 & 3) == 0 && (bx1 & 3) == 0)
+			{   //判断??的x坐?和??x方向的大小是否?4的倍数，使用4字?型
+				bx1 = (bx1 - bx0) / 4;
+				sid4 = sid | sid << 8 | sid << 16 | sid << 24;
+				for (by = by0; by < by1; by++)
 				{
-					vx = sht->vx0 + bx;
-					map[vy * ctl->xsize + vx] = sid;
+					vy = sht->vy0 + by;
+					vx = sht->vx0 + bx0;
+					p = (int *) &map[vy * ctl->xsize + vx];    //注意区分ctl->xsize和sht->bxsize,?里的ctl指的是整个??大小（初始化??中可看出即?scrnx）
+					for (bx = 0; bx < bx1; bx++)
+					{
+						p[bx] = sid4;
+					}
+				}
+			}
+			else
+			{    //不?4的整数倍，?使用原来的1字?型
+				for (by = by0; by < by1; by++)
+				{
+					vy = sht->vy0 + by;
+					for (bx = bx0; bx < bx1; bx++)
+					{
+						vx = sht->vx0 + bx;
+						map[vy * ctl->xsize + vx] = sid;
+					}
 				}
 			}
 		}
 		else
-		{
+		{    //含有透明色??，由于只有鼠???含有且尺寸很小，因此仍使用原来的1字?型
 			for (by = by0; by < by1; by++)
 			{
 				vy = sht->vy0 + by;
@@ -136,178 +154,177 @@ void sheet_refreshmap(struct SHTCTL *ctl, int vx0, int vy0, int vx1, int vy1, in
 	return;
 }
 
-	void sheet_refreshsub(struct SHTCTL * ctl, int vx0, int vy0, int vx1, int vy1, int h0, int h1)
+void sheet_refreshsub(struct SHTCTL *ctl, int vx0, int vy0, int vx1, int vy1, int h0, int h1)
+{
+	int h, bx, by, vx, vy, bx0, by0, bx1, by1;
+	unsigned char *buf, *vram = ctl->vram, *map = ctl->map, sid;
+	struct SHEET *sht;
+	/* refresh範囲が画面外にはみ出していたら補正 */
+	if (vx0 < 0)
 	{
-		int h, bx, by, vx, vy, bx0, by0, bx1, by1;
-		unsigned char *buf, *vram = ctl->vram, *map = ctl->map, sid;
-		struct SHEET *sht;
-		/* refresh範囲が画面外にはみ出していたら補正 */
-		if (vx0 < 0)
-		{
-			vx0 = 0;
-		}
-		if (vy0 < 0)
-		{
-			vy0 = 0;
-		}
-		if (vx1 > ctl->xsize)
-		{
-			vx1 = ctl->xsize;
-		}
-		if (vy1 > ctl->ysize)
-		{
-			vy1 = ctl->ysize;
-		}
-		for (h = h0; h <= h1; h++)
-		{
-			sht = ctl->sheets[h];
-			buf = sht->buf;
-			sid = sht - ctl->sheets0;
-			/* vx0～vy1を使って、bx0～by1を逆算する */
-			bx0 = vx0 - sht->vx0;
-			by0 = vy0 - sht->vy0;
-			bx1 = vx1 - sht->vx0;
-			by1 = vy1 - sht->vy0;
-			if (bx0 < 0)
-			{
-				bx0 = 0;
-			}
-			if (by0 < 0)
-			{
-				by0 = 0;
-			}
-			if (bx1 > sht->bxsize)
-			{
-				bx1 = sht->bxsize;
-			}
-			if (by1 > sht->bysize)
-			{
-				by1 = sht->bysize;
-			}
-			for (by = by0; by < by1; by++)
-			{
-				vy = sht->vy0 + by;
-				for (bx = bx0; bx < bx1; bx++)
-				{
-					vx = sht->vx0 + bx;
-					if (map[vy * ctl->xsize + vx] == sid)
-					{
-						vram[vy * ctl->xsize + vx] = buf[by * sht->bxsize + bx];
-					}
-				}
-			}
-		}
-		return;
+		vx0 = 0;
 	}
-
-	void sheet_updown(struct SHEET * sht, int height)
+	if (vy0 < 0)
 	{
-		struct SHTCTL *ctl = sht->ctl;
-		int h, old = sht->height; /* 設定前の高さを記憶する */
-
-		/* 指定が低すぎや高すぎだったら、修正する */
-		if (height > ctl->top + 1)
+		vy0 = 0;
+	}
+	if (vx1 > ctl->xsize)
+	{
+		vx1 = ctl->xsize;
+	}
+	if (vy1 > ctl->ysize)
+	{
+		vy1 = ctl->ysize;
+	}
+	for (h = h0; h <= h1; h++)
+	{
+		sht = ctl->sheets[h];
+		buf = sht->buf;
+		sid = sht - ctl->sheets0;
+		/* vx0～vy1を使って、bx0～by1を逆算する */
+		bx0 = vx0 - sht->vx0;
+		by0 = vy0 - sht->vy0;
+		bx1 = vx1 - sht->vx0;
+		by1 = vy1 - sht->vy0;
+		if (bx0 < 0)
 		{
-			height = ctl->top + 1;
+			bx0 = 0;
 		}
-		if (height < -1)
+		if (by0 < 0)
 		{
-			height = -1;
+			by0 = 0;
 		}
-		sht->height = height; /* 高さを設定 */
+		if (bx1 > sht->bxsize)
+		{
+			bx1 = sht->bxsize;
+		}
+		if (by1 > sht->bysize)
+		{
+			by1 = sht->bysize;
+		}
+		for (by = by0; by < by1; by++)
+		{
+			vy = sht->vy0 + by;
+			for (bx = bx0; bx < bx1; bx++)
+			{
+				vx = sht->vx0 + bx;
+				if (map[vy * ctl->xsize + vx] == sid)
+				{
+					vram[vy * ctl->xsize + vx] = buf[by * sht->bxsize + bx];
+				}
+			}
+		}
+	}
+	return;
+}
 
-		/* 以下は主にsheets[]の並べ替え */
-		if (old > height)
-		{ /* 以前よりも低くなる */
-			if (height >= 0)
+void sheet_updown(struct SHEET *sht, int height)
+{
+	struct SHTCTL *ctl = sht->ctl;
+	int h, old = sht->height; /* 設定前の高さを記憶する */
+
+	/* 指定が低すぎや高すぎだったら、修正する */
+	if (height > ctl->top + 1)
+	{
+		height = ctl->top + 1;
+	}
+	if (height < -1)
+	{
+		height = -1;
+	}
+	sht->height = height; /* 高さを設定 */
+
+	/* 以下は主にsheets[]の並べ替え */
+	if (old > height)
+	{ /* 以前よりも低くなる */
+		if (height >= 0)
+		{
+			/* 間のものを引き上げる */
+			for (h = old; h > height; h--)
 			{
-				/* 間のものを引き上げる */
-				for (h = old; h > height; h--)
-				{
-					ctl->sheets[h] = ctl->sheets[h - 1];
-					ctl->sheets[h]->height = h;
-				}
-				ctl->sheets[height] = sht;
-				sheet_refreshmap(ctl, sht->vx0, sht->vy0, sht->vx0 + sht->bxsize, sht->vy0 + sht->bysize, height + 1);
-				sheet_refreshsub(ctl, sht->vx0, sht->vy0, sht->vx0 + sht->bxsize, sht->vy0 + sht->bysize, height + 1, old);
+				ctl->sheets[h] = ctl->sheets[h - 1];
+				ctl->sheets[h]->height = h;
 			}
-			else
-			{ /* 非表示化 */
-				if (ctl->top > old)
-				{
-					/* 上になっているものをおろす */
-					for (h = old; h < ctl->top; h++)
-					{
-						ctl->sheets[h] = ctl->sheets[h + 1];
-						ctl->sheets[h]->height = h;
-					}
-				}
-				ctl->top--; /* 表示中の下じきが一つ減るので、一番上の高さが減る */
-				sheet_refreshmap(ctl, sht->vx0, sht->vy0, sht->vx0 + sht->bxsize, sht->vy0 + sht->bysize, 0);
-				sheet_refreshsub(ctl, sht->vx0, sht->vy0, sht->vx0 + sht->bxsize, sht->vy0 + sht->bysize, 0, old - 1);
-			}
+			ctl->sheets[height] = sht;
+			sheet_refreshmap(ctl, sht->vx0, sht->vy0, sht->vx0 + sht->bxsize, sht->vy0 + sht->bysize, height + 1);
+			sheet_refreshsub(ctl, sht->vx0, sht->vy0, sht->vx0 + sht->bxsize, sht->vy0 + sht->bysize, height + 1, old);
 		}
-		else if (old < height)
-		{ /* 以前よりも高くなる */
-			if (old >= 0)
+		else
+		{ /* 非表示化 */
+			if (ctl->top > old)
 			{
-				/* 間のものを押し下げる */
-				for (h = old; h < height; h++)
+				/* 上になっているものをおろす */
+				for (h = old; h < ctl->top; h++)
 				{
 					ctl->sheets[h] = ctl->sheets[h + 1];
 					ctl->sheets[h]->height = h;
 				}
-				ctl->sheets[height] = sht;
 			}
-			else
-			{ /* 非表示状態から表示状態へ */
-				/* 上になるものを持ち上げる */
-				for (h = ctl->top; h >= height; h--)
-				{
-					ctl->sheets[h + 1] = ctl->sheets[h];
-					ctl->sheets[h + 1]->height = h + 1;
-				}
-				ctl->sheets[height] = sht;
-				ctl->top++; /* 表示中の下じきが一つ増えるので、一番上の高さが増える */
-			}
-			sheet_refreshmap(ctl, sht->vx0, sht->vy0, sht->vx0 + sht->bxsize, sht->vy0 + sht->bysize, height);
-			sheet_refreshsub(ctl, sht->vx0, sht->vy0, sht->vx0 + sht->bxsize, sht->vy0 + sht->bysize, height, height);
+			ctl->top--; /* 表示中の下じきが一つ減るので、一番上の高さが減る */
+			sheet_refreshmap(ctl, sht->vx0, sht->vy0, sht->vx0 + sht->bxsize, sht->vy0 + sht->bysize, 0);
+			sheet_refreshsub(ctl, sht->vx0, sht->vy0, sht->vx0 + sht->bxsize, sht->vy0 + sht->bysize, 0, old - 1);
 		}
-		return;
 	}
-
-	void sheet_refresh(struct SHEET * sht, int bx0, int by0, int bx1, int by1)
-	{
-		if (sht->height >= 0)
-		{ /* もしも表示中なら、新しい下じきの情報に沿って画面を描き直す */
-			sheet_refreshsub(sht->ctl, sht->vx0 + bx0, sht->vy0 + by0, sht->vx0 + bx1, sht->vy0 + by1, sht->height, sht->height);
-		}
-		return;
-	}
-
-	void sheet_slide(struct SHEET * sht, int vx0, int vy0)
-	{
-		struct SHTCTL *ctl = sht->ctl;
-		int old_vx0 = sht->vx0, old_vy0 = sht->vy0;
-		sht->vx0 = vx0;
-		sht->vy0 = vy0;
-		if (sht->height >= 0)
-		{ /* もしも表示中なら、新しい下じきの情報に沿って画面を描き直す */
-			sheet_refreshmap(ctl, old_vx0, old_vy0, old_vx0 + sht->bxsize, old_vy0 + sht->bysize, 0);
-			sheet_refreshmap(ctl, vx0, vy0, vx0 + sht->bxsize, vy0 + sht->bysize, sht->height);
-			sheet_refreshsub(ctl, old_vx0, old_vy0, old_vx0 + sht->bxsize, old_vy0 + sht->bysize, 0, sht->height - 1);
-			sheet_refreshsub(ctl, vx0, vy0, vx0 + sht->bxsize, vy0 + sht->bysize, sht->height, sht->height);
-		}
-		return;
-	}
-
-	void sheet_free(struct SHEET * sht)
-	{
-		if (sht->height >= 0)
+	else if (old < height)
+	{ /* 以前よりも高くなる */
+		if (old >= 0)
 		{
-			sheet_updown(sht, -1); /* 表示中ならまず非表示にする */
+			/* 間のものを押し下げる */
+			for (h = old; h < height; h++)
+			{
+				ctl->sheets[h] = ctl->sheets[h + 1];
+				ctl->sheets[h]->height = h;
+			}
+			ctl->sheets[height] = sht;
 		}
-		sht->flags = 0; /* 未使用マーク */
-		return;
+		else
+		{ /* 非表示状態から表示状態へ */
+			/* 上になるものを持ち上げる */
+			for (h = ctl->top; h >= height; h--)
+			{
+				ctl->sheets[h + 1] = ctl->sheets[h];
+				ctl->sheets[h + 1]->height = h + 1;
+			}
+			ctl->sheets[height] = sht;
+			ctl->top++; /* 表示中の下じきが一つ増えるので、一番上の高さが増える */
+		}
+		sheet_refreshmap(ctl, sht->vx0, sht->vy0, sht->vx0 + sht->bxsize, sht->vy0 + sht->bysize, height);
+		sheet_refreshsub(ctl, sht->vx0, sht->vy0, sht->vx0 + sht->bxsize, sht->vy0 + sht->bysize, height, height);
 	}
+	return;
+}
 
+void sheet_refresh(struct SHEET *sht, int bx0, int by0, int bx1, int by1)
+{
+	if (sht->height >= 0)
+	{ /* もしも表示中なら、新しい下じきの情報に沿って画面を描き直す */
+		sheet_refreshsub(sht->ctl, sht->vx0 + bx0, sht->vy0 + by0, sht->vx0 + bx1, sht->vy0 + by1, sht->height, sht->height);
+	}
+	return;
+}
+
+void sheet_slide(struct SHEET *sht, int vx0, int vy0)
+{
+	struct SHTCTL *ctl = sht->ctl;
+	int old_vx0 = sht->vx0, old_vy0 = sht->vy0;
+	sht->vx0 = vx0;
+	sht->vy0 = vy0;
+	if (sht->height >= 0)
+	{ /* もしも表示中なら、新しい下じきの情報に沿って画面を描き直す */
+		sheet_refreshmap(ctl, old_vx0, old_vy0, old_vx0 + sht->bxsize, old_vy0 + sht->bysize, 0);
+		sheet_refreshmap(ctl, vx0, vy0, vx0 + sht->bxsize, vy0 + sht->bysize, sht->height);
+		sheet_refreshsub(ctl, old_vx0, old_vy0, old_vx0 + sht->bxsize, old_vy0 + sht->bysize, 0, sht->height - 1);
+		sheet_refreshsub(ctl, vx0, vy0, vx0 + sht->bxsize, vy0 + sht->bysize, sht->height, sht->height);
+	}
+	return;
+}
+
+void sheet_free(struct SHEET *sht)
+{
+	if (sht->height >= 0)
+	{
+		sheet_updown(sht, -1); /* 表示中ならまず非表示にする */
+	}
+	sht->flags = 0; /* 未使用マーク */
+	return;
+}
