@@ -21,12 +21,13 @@ void HariMain(void)
 	struct MEMMAN *memman = (struct MEMMAN *)MEMMAN_ADDR;
 	unsigned char *buf_back, buf_mouse[256] /* ,*buf_win */, *buf_cons[2];
 	struct SHEET *sht_back, *sht_mouse /* ,*sht_win */, *sht_cons[2];
-	struct TASK  *task_a, *task_cons[2], *task;
+	struct TASK *task_a, *task_cons[2], *task;
 	// struct TIMER *timer;
 	// struct CONSOLE *cons;
 
 	int j, x, y;
-	int mmx = -1, mmy = -1,mmx2=0;
+	int mmx = -1, mmy = -1, mmx2 = 0;
+	int new_mx=-1,new_my=0,new_wx=0x7fffffff,new_wy=0;
 	struct SHEET *sht = 0, *key_win;
 
 	static char keytable0[0x80] = {
@@ -71,7 +72,6 @@ void HariMain(void)
 	fifo.task = task_a;
 	task_run(task_a, 1, 2);
 	*((int *)0x0fe4) = (int)shtctl;
-	
 
 	/* sht_back */
 	sht_back = sheet_alloc(shtctl);
@@ -80,7 +80,7 @@ void HariMain(void)
 	init_screen8(buf_back, binfo->scrnx, binfo->scrny);
 
 	/* sht_cons */
-	for(i=0;i<2;i++)
+	for (i = 0; i < 2; i++)
 	{
 		sht_cons[i] = sheet_alloc(shtctl);
 		buf_cons[i] = (unsigned char *)memman_alloc_4k(memman, 256 * 165);
@@ -103,8 +103,8 @@ void HariMain(void)
 		sht_cons[i]->flags |= 0x20;
 
 		//将命令行的初始化放在前面，以免在还没初始化的情况下向命令行传送数据
-		cons_fifo[i]=(int *) memman_alloc_4k(memman,128*4);
-		fifo32_init(&task_cons[i]->fifo,128,cons_fifo[i],task_cons[i]);
+		cons_fifo[i] = (int *)memman_alloc_4k(memman, 128 * 4);
+		fifo32_init(&task_cons[i]->fifo, 128, cons_fifo[i], task_cons[i]);
 	}
 
 	/* sht_win */
@@ -121,24 +121,24 @@ void HariMain(void)
 
 	/* sht_mouse */
 	sht_mouse = sheet_alloc(shtctl);
-	sheet_setbuf(sht_mouse, buf_mouse, 16, 16, 99);    //鼠标透明色号99
-	init_mouse_cursor8(buf_mouse, 99);                 //鼠标背景色号99
-	mx = (binfo->scrnx - 16) / 2; /* 画面中心位置计算 */
+	sheet_setbuf(sht_mouse, buf_mouse, 16, 16, 99); //鼠标透明色号99
+	init_mouse_cursor8(buf_mouse, 99);				//鼠标背景色号99
+	mx = (binfo->scrnx - 16) / 2;					/* 画面中心位置计算 */
 	my = (binfo->scrny - 28 - 16) / 2;
 
 	sheet_slide(sht_back, 0, 0);
 	sheet_slide(sht_cons[1], 52, 6);
-	sheet_slide(sht_cons[0],8,2);
+	sheet_slide(sht_cons[0], 8, 2);
 	// sheet_slide(sht_win, 64, 56);
 	sheet_slide(sht_mouse, mx, my);
 	sheet_updown(sht_back, 0);
 	sheet_updown(sht_cons[1], 1);
-	sheet_updown(sht_cons[0],2);
+	sheet_updown(sht_cons[0], 2);
 	// sheet_updown(sht_win, 3);
 	sheet_updown(sht_mouse, 3);
 
 	// key_win = sht_win;
-	key_win=sht_cons[0];
+	key_win = sht_cons[0];
 	keywin_on(key_win);
 
 	// sprintf(s, "(%3d, %3d)", mx, my);
@@ -163,8 +163,18 @@ void HariMain(void)
 		io_cli();
 		if (fifo32_status(&fifo) == 0)
 		{
-			task_sleep(task_a);
-			io_sti();
+			if(new_mx>=0){
+				io_sti();
+				sheet_slide(sht_mouse,new_mx,new_my);
+				new_mx=-1;
+			}else if(new_wx!=0x7fffffff){
+				io_sti();
+				sheet_slide(sht,new_wx,new_wy);
+				new_wx=0x07fffffff;
+			}else{
+				task_sleep(task_a);
+				io_sti();
+			}
 		}
 		else
 		{
@@ -204,7 +214,7 @@ void HariMain(void)
 				}
 				if (s[0] != 0)
 				{ /* 一般字符 、退格键、回车键  因为去掉了task_a,故可一起通过命令行窗口来执行了*/
-					fifo32_put(&key_win->task->fifo,s[0]+256);
+					fifo32_put(&key_win->task->fifo, s[0] + 256);
 				}
 				// if (i == 256 + 0x0e)
 				// { /* 退格键 */
@@ -231,11 +241,12 @@ void HariMain(void)
 				if (i == 256 + 0x0f)
 				{ /* Tab */
 					keywin_off(key_win);
-					j=key_win->height-1;
-					if(j==0){
-						j=shtctl->top-1;
+					j = key_win->height - 1;
+					if (j == 0)
+					{
+						j = shtctl->top - 1;
 					}
-					key_win=shtctl->sheets[j];
+					key_win = shtctl->sheets[j];
 					keywin_on(key_win);
 				}
 				if (i == 256 + 0x2a)
@@ -272,10 +283,10 @@ void HariMain(void)
 					fifo32_put(&keycmd, KEYCMD_LED);
 					fifo32_put(&keycmd, key_leds);
 				}
-				if (i == 256 + 0x3b && key_shift != 0 )
+				if (i == 256 + 0x3b && key_shift != 0)
 				{
-					task=key_win->task;   //用F1强制结束应用程序时，以当前输入窗口为对象
-					if(task!=0&&task->tss.ss0!=0)
+					task = key_win->task; //用F1强制结束应用程序时，以当前输入窗口为对象
+					if (task != 0 && task->tss.ss0 != 0)
 					{
 						cons_putstr0(task->cons, "\nBreak(key):\n");
 						io_cli();
@@ -284,8 +295,8 @@ void HariMain(void)
 						io_sti();
 					}
 				}
-				if (i == 256 + 0x57 )
-				{    /* F11 将最下面的图层置换到最上层（去掉鼠标和背景层）*/
+				if (i == 256 + 0x57)
+				{ /* F11 将最下面的图层置换到最上层（去掉鼠标和背景层）*/
 					sheet_updown(shtctl->sheets[1], shtctl->top - 1);
 				}
 				/* 重新显示光标 */
@@ -343,9 +354,11 @@ void HariMain(void)
 					}
 					// sprintf(s, "(%3d, %3d)", mx, my);
 					// putfonts8_asc_sht(sht_back, 0, 0, COL8_FFFFFF, COL8_008484, s, 10);
-					sheet_slide(sht_mouse, mx, my);
+					// sheet_slide(sht_mouse, mx, my);
+					new_mx=mx;
+					new_my=my;
 					if ((mdec.btn & 0x01) != 0)
-					{
+					{ //按下鼠标左键
 						/* 点击鼠标移动sht_win图层 */
 						// sheet_slide(sht_win, mx - 80, my - 8);
 						if (mmx < 0)
@@ -360,23 +373,25 @@ void HariMain(void)
 									if (sht->buf[y * sht->bxsize + x] != sht->col_inv)
 									{
 										sheet_updown(sht, shtctl->top - 1);
-										if(sht!=key_win){
+										if (sht != key_win)
+										{
 											keywin_off(key_win);
-											key_win=sht;
+											key_win = sht;
 											keywin_on(key_win);
 										}
 										if (3 <= x && x < sht->bxsize - 3 && 3 <= y && y < 21)
-										{  //如果鼠标点击区域位于标题栏部分
+										{ //如果鼠标点击区域位于标题栏部分
 											mmx = mx;
 											mmy = my;
-											mmx2=sht->vx0;  //记录移动前图层的vx0
+											mmx2 = sht->vx0; //记录移动前图层的vx0
+											new_wy=sht->vy0;
 										}
 										if (sht->bxsize - 21 <= x && x < sht->bxsize - 5 && 5 <= y && y < 19)
 										{
 											if ((sht->flags & 0x10) != 0)
 											{
 												// cons = (struct CONSOLE *)*((int *)0x0fec);
-												task=sht->task;  //用鼠标点击‘X’时，以被点击的窗口为对象
+												task = sht->task; //用鼠标点击‘X’时，以被点击的窗口为对象
 												cons_putstr0(task->cons, "\nBreak(mouse) :\n");
 												io_cli();
 												task->tss.eax = (int)&(task->tss.esp0);
@@ -390,16 +405,22 @@ void HariMain(void)
 							}
 						}
 						else
-						{
+						{ //mmx不小于1了，说明处于窗口移动模式
 							x = mx - mmx;
 							y = my - mmy;
-							sheet_slide(sht, (mmx2 + x+2) & ~3, sht->vy0 + y);
+							// sheet_slide(sht, (mmx2 + x + 2) & ~3, sht->vy0 + y);
+							new_wx=(mmx2+x+2) & ~3;
+							new_wy=new_wy+y;
 							mmy = my;
 						}
 					}
 					else
-					{
+					{ //没有按下鼠标左键，切换到一般模式，立即移动窗口，因为窗口的坐标可能为负数，故选取0x7fffffff这个不可能出现的值
 						mmx = -1;
+						if(new_wx!=0x7fffffff){
+							sheet_slide(sht,new_wx,new_wy);
+							new_wx=0x7fffffff;
+						}
 					}
 				}
 			}
@@ -432,11 +453,12 @@ void HariMain(void)
 	}
 }
 
-void keywin_off(struct SHEET *key_win  /*, struct SHEET *sht_win, int cur_c, int cur_x */)
+void keywin_off(struct SHEET *key_win /*, struct SHEET *sht_win, int cur_c, int cur_x */)
 {
 	change_wtitle8(key_win, 0);
-	if((key_win->flags&0x20)!=0){
-		fifo32_put(&key_win->task->fifo,3);   //命令行窗口光标OFF，0x20用于判别窗口是否为命令行窗口
+	if ((key_win->flags & 0x20) != 0)
+	{
+		fifo32_put(&key_win->task->fifo, 3); //命令行窗口光标OFF，0x20用于判别窗口是否为命令行窗口
 	}
 	// if (key_win == sht_win)
 	// {
@@ -450,11 +472,12 @@ void keywin_off(struct SHEET *key_win  /*, struct SHEET *sht_win, int cur_c, int
 	return;
 }
 
-void keywin_on(struct SHEET *key_win  )
+void keywin_on(struct SHEET *key_win)
 {
 	change_wtitle8(key_win, 1);
-	if((key_win->flags&0x20)!=0){
-		fifo32_put(&key_win->task->fifo,2);   //命令行窗口光标ON
+	if ((key_win->flags & 0x20) != 0)
+	{
+		fifo32_put(&key_win->task->fifo, 2); //命令行窗口光标ON
 	}
 	// if (key_win == sht_win)
 	// {
@@ -469,4 +492,3 @@ void keywin_on(struct SHEET *key_win  )
 	// }
 	return;
 }
-
