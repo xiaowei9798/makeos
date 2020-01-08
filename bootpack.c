@@ -7,7 +7,9 @@
 #define KEYCMD_LED 0xed
 void keywin_off(struct SHEET *key_win);
 void keywin_on(struct SHEET *key_win);
-struct SHEET *open_console(struct SHTCTL *shtctl,unsigned int memtotal);
+struct SHEET *open_console(struct SHTCTL *shtctl, unsigned int memtotal);
+void close_console(struct SHEET *sht);
+void close_constack(struct TASK *task);
 
 void HariMain(void)
 {
@@ -15,20 +17,20 @@ void HariMain(void)
 	struct SHTCTL *shtctl;
 	char s[40];
 	struct FIFO32 fifo, keycmd;
-	int  fifobuf[128], keycmd_buf[32] /* , *cons_fifo[2] */;
+	int fifobuf[128], keycmd_buf[32] /* , *cons_fifo[2] */;
 	int mx, my, i /* ,cursor_x, cursor_c*/;
 	unsigned int memtotal;
 	struct MOUSE_DEC mdec;
 	struct MEMMAN *memman = (struct MEMMAN *)MEMMAN_ADDR;
 	unsigned char *buf_back, buf_mouse[256] /* ,*buf_win , *buf_cons[2] */;
-	struct SHEET *sht_back, *sht_mouse /* ,*sht_win */, *sht_cons[2];
-	struct TASK *task_a  /* , *task_cons[2] */, *task;
+	struct SHEET *sht_back, *sht_mouse /* ,*sht_win , *sht_cons[2]  */;
+	struct TASK *task_a /* , *task_cons[2] */, *task;
 	// struct TIMER *timer;
 	// struct CONSOLE *cons;
-
+	*((int *) 0x0fec)=(int) &fifo;
 	int j, x, y;
 	int mmx = -1, mmy = -1, mmx2 = 0;
-	int new_mx=-1,new_my=0,new_wx=0x7fffffff,new_wy=0;
+	int new_mx = -1, new_my = 0, new_wx = 0x7fffffff, new_wy = 0;
 	struct SHEET *sht = 0, *key_win;
 
 	static char keytable0[0x80] = {
@@ -81,8 +83,7 @@ void HariMain(void)
 	init_screen8(buf_back, binfo->scrnx, binfo->scrny);
 
 	/* sht_cons */
-	sht_cons[0]=open_console(shtctl,memtotal);
-	sht_cons[1]=0;
+	key_win = open_console(shtctl, memtotal);
 
 	// for (i = 0; i < 2; i++)
 	// {
@@ -111,7 +112,6 @@ void HariMain(void)
 	// 	fifo32_init(&task_cons[i]->fifo, 128, cons_fifo[i], task_cons[i]);
 	// }
 
-
 	/* sht_mouse */
 	sht_mouse = sheet_alloc(shtctl);
 	sheet_setbuf(sht_mouse, buf_mouse, 16, 16, 99); //鼠标透明色号99
@@ -121,13 +121,13 @@ void HariMain(void)
 
 	sheet_slide(sht_back, 0, 0);
 	// sheet_slide(sht_cons[1], 52, 6);
-	sheet_slide(sht_cons[0], 32, 4);
+	sheet_slide(key_win, 32, 4);
 	sheet_slide(sht_mouse, mx, my);
 	sheet_updown(sht_back, 0);
 	// sheet_updown(sht_cons[1], 1);
-	sheet_updown(sht_cons[0], 1);
+	sheet_updown(key_win, 1);
 	sheet_updown(sht_mouse, 2);
-	key_win = sht_cons[0];
+	// key_win = sht_cons[0];
 	keywin_on(key_win);
 
 	// sprintf(s, "(%3d, %3d)", mx, my);
@@ -152,15 +152,20 @@ void HariMain(void)
 		io_cli();
 		if (fifo32_status(&fifo) == 0)
 		{
-			if(new_mx>=0){
+			if (new_mx >= 0)
+			{
 				io_sti();
-				sheet_slide(sht_mouse,new_mx,new_my);
-				new_mx=-1;
-			}else if(new_wx!=0x7fffffff){
+				sheet_slide(sht_mouse, new_mx, new_my);
+				new_mx = -1;
+			}
+			else if (new_wx != 0x7fffffff)
+			{
 				io_sti();
-				sheet_slide(sht,new_wx,new_wy);
-				new_wx=0x07fffffff;
-			}else{
+				sheet_slide(sht, new_wx, new_wy);
+				new_wx = 0x07fffffff;
+			}
+			else
+			{
 				task_sleep(task_a);
 				io_sti();
 			}
@@ -169,10 +174,16 @@ void HariMain(void)
 		{
 			i = fifo32_get(&fifo);
 			io_sti();
-			if (key_win->flags == 0)
+			if(key_win !=0 && key_win->flags==0)
 			{
-				key_win = shtctl->sheets[shtctl->top - 1];
-				keywin_on(key_win);
+				if(shtctl->top==1){
+					key_win=0;
+				}
+				else
+				{
+					key_win=shtctl->sheets[shtctl->top-1];
+					keywin_on(key_win);
+				}
 			}
 			if (256 <= i && i <= 511)
 			{ /* 键盘数据 */
@@ -201,7 +212,7 @@ void HariMain(void)
 						s[0] += 0x20; /* 大小写文字変換 */
 					}
 				}
-				if (s[0] != 0)
+				if (s[0] != 0 && key_win !=0)
 				{ /* 一般字符 、退格键、回车键  因为去掉了task_a,故可一起通过命令行窗口来执行了*/
 					fifo32_put(&key_win->task->fifo, s[0] + 256);
 				}
@@ -227,7 +238,7 @@ void HariMain(void)
 				// 		fifo32_put(&key_win->task->fifo, 10 + 256);
 				// 	}
 				// }
-				if (i == 256 + 0x0f)
+				if (i == 256 + 0x0f && key_win !=0)
 				{ /* Tab */
 					keywin_off(key_win);
 					j = key_win->height - 1;
@@ -272,7 +283,7 @@ void HariMain(void)
 					fifo32_put(&keycmd, KEYCMD_LED);
 					fifo32_put(&keycmd, key_leds);
 				}
-				if (i == 256 + 0x3b && key_shift != 0)
+				if (i == 256 + 0x3b && key_shift != 0 && key_win !=0)
 				{
 					task = key_win->task; //用shift+F1强制结束应用程序时，以当前输入窗口为对象
 					if (task != 0 && task->tss.ss0 != 0)
@@ -284,13 +295,16 @@ void HariMain(void)
 						io_sti();
 					}
 				}
-				if(i==256+0x3c && key_shift!=0 && sht_cons[1]==0)
-				{  //shift+F2 打开一个新的命令窗口
-					sht_cons[1]=open_console(shtctl,memtotal);
-					sheet_slide(sht_cons[1],32,4);
-					sheet_updown(sht_cons[1],shtctl->top);
-					keywin_off(key_win);
-					key_win=sht_cons[1];
+				if (i == 256 + 0x3c && key_shift != 0)
+				{ //shift+F2 打开一个新的命令窗口
+					if(key_win!=0){
+						keywin_off(key_win);
+					}
+					key_win = open_console(shtctl, memtotal);
+					sheet_slide(key_win, 32, 4);
+					sheet_updown(key_win, shtctl->top);
+					// keywin_off(key_win);
+					// key_win=sht_cons[1];
 					keywin_on(key_win);
 				}
 				if (i == 256 + 0x57)
@@ -347,8 +361,8 @@ void HariMain(void)
 					// sprintf(s, "(%3d, %3d)", mx, my);
 					// putfonts8_asc_sht(sht_back, 0, 0, COL8_FFFFFF, COL8_008484, s, 10);
 					// sheet_slide(sht_mouse, mx, my);
-					new_mx=mx;
-					new_my=my;
+					new_mx = mx;
+					new_my = my;
 					if ((mdec.btn & 0x01) != 0)
 					{ //按下鼠标左键
 						/* 点击鼠标移动sht_win图层 */
@@ -376,7 +390,7 @@ void HariMain(void)
 											mmx = mx;
 											mmy = my;
 											mmx2 = sht->vx0; //记录移动前图层的vx0
-											new_wy=sht->vy0;
+											new_wy = sht->vy0;
 										}
 										if (sht->bxsize - 21 <= x && x < sht->bxsize - 5 && 5 <= y && y < 19)
 										{
@@ -401,20 +415,25 @@ void HariMain(void)
 							x = mx - mmx;
 							y = my - mmy;
 							// sheet_slide(sht, (mmx2 + x + 2) & ~3, sht->vy0 + y);
-							new_wx=(mmx2+x+2) & ~3;
-							new_wy=new_wy+y;
+							new_wx = (mmx2 + x + 2) & ~3;
+							new_wy = new_wy + y;
 							mmy = my;
 						}
 					}
 					else
 					{ //没有按下鼠标左键，切换到一般模式，立即移动窗口，因为窗口的坐标可能为负数，故选取0x7fffffff这个不可能出现的值
 						mmx = -1;
-						if(new_wx!=0x7fffffff){
-							sheet_slide(sht,new_wx,new_wy);
-							new_wx=0x7fffffff;
+						if (new_wx != 0x7fffffff)
+						{
+							sheet_slide(sht, new_wx, new_wy);
+							new_wx = 0x7fffffff;
 						}
 					}
 				}
+			}
+			else if(768<=i && i<=1023)
+			{
+				close_console(shtctl->sheets0+(i-768));
 			}
 			// else if (i <= 1)
 			// { /* 光标用定时器 */
@@ -485,31 +504,50 @@ void keywin_on(struct SHEET *key_win)
 	return;
 }
 
-struct SHEET *open_console(struct SHTCTL *shtctl,unsigned int memtotal)
+struct SHEET *open_console(struct SHTCTL *shtctl, unsigned int memtotal)
 {
-	struct MEMMAN *memman =(struct MEMMAN *) MEMMAN_ADDR;
-	struct SHEET *sht=sheet_alloc(shtctl);
-	unsigned char *buf=(unsigned char *) memman_alloc_4k(memman,256*165);
-	struct TASK *task=task_alloc();
-	int *cons_fifo=(int *) memman_alloc_4k(memman,128*4);
-	sheet_setbuf(sht,buf,256,165,-1);
-	make_window8(buf,256,165,"console",0);
-	make_textbox8(sht,8,28,240,128,COL8_000000);
-	task->tss.esp=memman_alloc_4k(memman,64*1024)+64*1024-12;
-	task->tss.eip=(int) &console_task;
-	task->tss.es=1*8;
-	task->tss.cs=2*8;
-	task->tss.ss=1*8;
-	task->tss.ds=1*8;
-	task->tss.fs=1*8;
-	task->tss.gs=1*8;
-	*((int *) (task->tss.esp+4))=(int)sht;
-	*((int *) (task->tss.esp+8))=memtotal;
-	task_run(task,2,2);  //level=2,priority=2
-	sht->task=task;
-	sht->flags |=0x20;
-	fifo32_init(&task->fifo,128,cons_fifo,task);
+	struct MEMMAN *memman = (struct MEMMAN *)MEMMAN_ADDR;
+	struct SHEET *sht = sheet_alloc(shtctl);
+	unsigned char *buf = (unsigned char *)memman_alloc_4k(memman, 256 * 165);
+	struct TASK *task = task_alloc();
+	int *cons_fifo = (int *)memman_alloc_4k(memman, 128 * 4);
+	sheet_setbuf(sht, buf, 256, 165, -1);
+	make_window8(buf, 256, 165, "console", 0);
+	make_textbox8(sht, 8, 28, 240, 128, COL8_000000);
+	task->cons_stack = memman_alloc_4k(memman, 64 * 1024);  //将创建的命令行窗口的栈地址保存起来
+	task->tss.esp = task->cons_stack + 64 * 1024 - 12;
+	task->tss.eip = (int)&console_task;
+	task->tss.es = 1 * 8;
+	task->tss.cs = 2 * 8;
+	task->tss.ss = 1 * 8;
+	task->tss.ds = 1 * 8;
+	task->tss.fs = 1 * 8;
+	task->tss.gs = 1 * 8;
+	*((int *)(task->tss.esp + 4)) = (int)sht;
+	*((int *)(task->tss.esp + 8)) = memtotal;
+	task_run(task, 2, 2); //level=2,priority=2
+	sht->task = task;
+	sht->flags |= 0x20;
+	fifo32_init(&task->fifo, 128, cons_fifo, task);
 	return sht;
 }
 
+void close_console(struct SHEET *sht)
+{
+	struct MEMMAN *memman =(struct MEMMAN *) MEMMAN_ADDR;
+	struct TASK *task=sht->task;
+	memman_free_4k(memman,(int)sht->buf,256*165);
+	sheet_free(sht);
+	close_constack(task);  //将关闭任务和关闭图层分为两个函数来写
+	return;
+}
 
+void close_constack(struct TASK *task)
+{
+	struct MEMMAN *memman=(struct MEMMAN *) MEMMAN_ADDR;
+	task_sleep(task);
+	memman_free_4k(memman,task->cons_stack,64*1024);   //task->cons_stack 保存着命令行窗口创建的栈地址
+	memman_free_4k(memman,(int)task->fifo.buf,128*4);
+	task->flags=0;
+	return;
+}

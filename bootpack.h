@@ -215,7 +215,7 @@ struct TASK {
 	struct FIFO32 fifo;
 	struct TSS32 tss;
 	struct CONSOLE *cons;
-	int ds_base;
+	int ds_base,cons_stack;
 };
 struct TASKLEVEL {
 	int running; /* ���삵�Ă���^�X�N�̐� */
@@ -264,6 +264,7 @@ int *hrb_api(int edi,int esi,int ebp,int esp,int ebx,int edx,int ecx,int eax);
 int *inthandler0d(int *esp);
 int *inthandler0c(int *esp);
 void hrb_api_linewin(struct SHEET *sht,int x0,int y0,int x1,int y1,int col);
+void cmd_exit(struct CONSOLE *cons, int *fat);
 
 /* fife.c */
 struct FILEINFO

@@ -8,7 +8,7 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 {
 	struct TASK *task = task_now();
 	struct MEMMAN *memman = (struct MEMMAN *)MEMMAN_ADDR;
-	int i,  /* fifobuf[128], */  *fat = (int *)memman_alloc_4k(memman, 4 * 2880);
+	int i, /* fifobuf[128], */ *fat = (int *)memman_alloc_4k(memman, 4 * 2880);
 	struct CONSOLE cons;
 	char cmdline[30];
 	cons.sht = sheet;
@@ -224,6 +224,10 @@ void cons_runcmd(char *cmdline, struct CONSOLE *cons, int *fat, unsigned int mem
 	{
 		cmd_type(cons, fat, cmdline);
 	}
+	else if (strcmp(cmdline, "exit") == 0)
+	{
+		cmd_exit(cons, fat);
+	}
 	else if (cmdline[0] != 0)
 	{
 		if (cmd_app(cons, fat, cmdline) == 0)
@@ -311,6 +315,23 @@ void cmd_type(struct CONSOLE *cons, int *fat, char *cmdline)
 	}
 	cons_newline(cons);
 	return;
+}
+
+void cmd_exit(struct CONSOLE *cons, int *fat)
+{
+	struct MEMMAN *memman = (struct MEMMAN *)MEMMAN_ADDR;
+	struct TASK *task = task_now();
+	struct SHTCTL *shtctl = (struct SHTCTL *) *((int *)0x0fe4);
+	struct FIFO32 *fifo = (struct FIFO32 *) *((int *)0x0fec);
+	timer_cancel(cons->timer);
+	memman_free_4k(memman, (int)fat, 4 * 2880);
+	io_cli();
+	fifo32_put(fifo, cons->sht - shtctl->sheets0 + 768);
+	io_sti();
+	for (;;)
+	{
+		task_sleep(task);
+	}
 }
 
 int cmd_app(struct CONSOLE *cons, int *fat, char *cmdline)
@@ -429,7 +450,7 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 		sheet_setbuf(sht, (char *)ebx + ds_base, esi, edi, eax);
 		make_window8((char *)ebx + ds_base, esi, edi, (char *)ecx + ds_base, 0);
 		sheet_slide(sht, ((shtctl->xsize - esi) / 2) & ~3, (shtctl->ysize - edi) / 2);
-		sheet_updown(sht, shtctl->top);    /* 将窗口高度指定?当前鼠???所在高度，鼠???上移 */
+		sheet_updown(sht, shtctl->top); /* 将窗口高度指定?当前鼠???所在高度，鼠???上移 */
 		reg[7] = (int)sht;
 	}
 	else if (edx == 6)
