@@ -229,6 +229,7 @@ struct TASKCTL {
 	struct TASK tasks0[MAX_TASKS];
 };
 extern struct TIMER *task_timer;
+extern struct TASKCTL *taskctl;
 struct TASK *task_now(void);
 struct TASK *task_init(struct MEMMAN *memman);
 struct TASK *task_alloc(void);
@@ -266,6 +267,7 @@ int *inthandler0c(int *esp);
 void hrb_api_linewin(struct SHEET *sht,int x0,int y0,int x1,int y1,int col);
 void cmd_exit(struct CONSOLE *cons, int *fat);
 void cmd_start(struct CONSOLE *cons, char *cmdline, int memtotal);
+void cmd_ncst(struct CONSOLE *cons, char *cmdline ,int memtotal);
 
 /* fife.c */
 struct FILEINFO
@@ -280,4 +282,6 @@ void file_loadfile(int clustno,int size,char *buf,int *fat,char *img);
 struct FILEINFO *file_search(char *name, struct FILEINFO *finfo,int max);
 
 /* bootpack.c */
+// struct SHEET *open_console(struct SHTCTL *shtctl, unsigned int memtotal);
 struct SHEET *open_console(struct SHTCTL *shtctl, unsigned int memtotal);
+struct TASK *open_constask(struct SHEET *sht, unsigned int memtotal);

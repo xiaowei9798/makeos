@@ -18,9 +18,12 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 	task->cons = &cons;
 
 	// fifo32_init(&task->fifo, 128, fifobuf, task);
-	cons.timer = timer_alloc();
-	timer_init(cons.timer, &task->fifo, 1);
-	timer_settime(cons.timer, 50);
+	if(sheet!=0)
+	{   //因?所有的命令行任?的eip都指向console_task,所以?于不?示命令行窗口的禁用一些没必要的?理
+		cons.timer = timer_alloc();
+		timer_init(cons.timer, &task->fifo, 1);
+		timer_settime(cons.timer, 50);
+	}
 	file_readfat(fat, (unsigned char *)(ADR_DISKIMG + 0x000200));
 
 	/* プロンプト表示 */
@@ -90,7 +93,10 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 					cons_putchar(&cons, ' ', 0);
 					cmdline[cons.cur_x / 8 - 2] = 0;
 					cons_newline(&cons);
-					cons_runcmd(cmdline, &cons, fat, memtotal); /* コマンド実行 */
+					cons_runcmd(cmdline, &cons, fat, memtotal); /* ?行命令*/
+					if(sheet==0){
+						cmd_exit(&cons,fat);  //?于不?示窗口的命令行，程序?行完?后直接将其?止
+					}
 					/* プロンプト表示 */
 					cons_putchar(&cons, '>', 1);
 				}
@@ -105,12 +111,15 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 					}
 				}
 			}
-			/* カーソル再表示 */
-			if (cons.cur_c >= 0)
+			/* 重新?示光? */
+			if(sheet!=0)
 			{
-				boxfill8(sheet->buf, sheet->bxsize, cons.cur_c, cons.cur_x, cons.cur_y, cons.cur_x + 7, cons.cur_y + 15);
+				if (cons.cur_c >= 0)
+				{
+					boxfill8(sheet->buf, sheet->bxsize, cons.cur_c, cons.cur_x, cons.cur_y, cons.cur_x + 7, cons.cur_y + 15);
+				}
+				sheet_refresh(sheet, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
 			}
-			sheet_refresh(sheet, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
 		}
 	}
 }
@@ -124,7 +133,9 @@ void cons_putchar(struct CONSOLE *cons, int chr, char move)
 	{ /* タブ */
 		for (;;)
 		{
-			putfonts8_asc_sht(cons->sht, cons->cur_x, cons->cur_y, COL8_FFFFFF, COL8_000000, " ", 1);
+			if(cons->sht!=0){
+				putfonts8_asc_sht(cons->sht, cons->cur_x, cons->cur_y, COL8_FFFFFF, COL8_000000, " ", 1);	
+			}
 			cons->cur_x += 8;
 			if (cons->cur_x == 8 + 240)
 			{
@@ -146,7 +157,9 @@ void cons_putchar(struct CONSOLE *cons, int chr, char move)
 	}
 	else
 	{ /* 普通の文字 */
-		putfonts8_asc_sht(cons->sht, cons->cur_x, cons->cur_y, COL8_FFFFFF, COL8_000000, s, 1);
+		if(cons->sht !=0){
+			putfonts8_asc_sht(cons->sht, cons->cur_x, cons->cur_y, COL8_FFFFFF, COL8_000000, s, 1);
+		}
 		if (move != 0)
 		{
 			/* moveが0のときはカーソルを進めない */
@@ -171,21 +184,23 @@ void cons_newline(struct CONSOLE *cons)
 	else
 	{
 		/* スクロール */
-		for (y = 28; y < 28 + 112; y++)
-		{
-			for (x = 8; x < 8 + 240; x++)
+		if(sheet!=0){
+			for (y = 28; y < 28 + 112; y++)
 			{
-				sheet->buf[x + y * sheet->bxsize] = sheet->buf[x + (y + 16) * sheet->bxsize];
+				for (x = 8; x < 8 + 240; x++)
+				{
+					sheet->buf[x + y * sheet->bxsize] = sheet->buf[x + (y + 16) * sheet->bxsize];
+				}
 			}
-		}
-		for (y = 28 + 112; y < 28 + 128; y++)
-		{
-			for (x = 8; x < 8 + 240; x++)
+			for (y = 28 + 112; y < 28 + 128; y++)
 			{
-				sheet->buf[x + y * sheet->bxsize] = COL8_000000;
+				for (x = 8; x < 8 + 240; x++)
+				{
+					sheet->buf[x + y * sheet->bxsize] = COL8_000000;
+				}
 			}
+			sheet_refresh(sheet, 8, 28, 8 + 240, 28 + 128);
 		}
-		sheet_refresh(sheet, 8, 28, 8 + 240, 28 + 128);
 	}
 	cons->cur_x = 8;
 	return;
@@ -235,6 +250,10 @@ void cons_runcmd(char *cmdline, struct CONSOLE *cons, int *fat, unsigned int mem
 	else if (strncmp(cmdline, "start ", 6) == 0)
 	{
 		cmd_start(cons, cmdline, memtotal);
+	}
+	else if(strncmp(cmdline ,"ncst ",5)==0)
+	{
+		cmd_ncst(cons,cmdline,memtotal);
 	}
 	else if (cmdline[0] != 0)
 	{
@@ -334,7 +353,12 @@ void cmd_exit(struct CONSOLE *cons, int *fat)
 	timer_cancel(cons->timer);
 	memman_free_4k(memman, (int)fat, 4 * 2880);
 	io_cli();
-	fifo32_put(fifo, cons->sht - shtctl->sheets0 + 768);
+	if(cons->sht!=0)
+	{
+		fifo32_put(fifo, cons->sht - shtctl->sheets0 + 768);  //?于?示窗口的命令行，?放?命令行（先?放??后任?） 768~1023
+	}else{
+		fifo32_put(fifo,task-taskctl->tasks0+1024);   //?于不?示窗口的命令行，只需?放?任?  1024~2023
+	}
 	io_sti();
 	for (;;)
 	{
@@ -344,7 +368,7 @@ void cmd_exit(struct CONSOLE *cons, int *fat)
 
 void cmd_start(struct CONSOLE *cons, char *cmdline, int memtotal)
 {
-	struct SHTCTL *shtctl = (struct SHTCTL *)*((int *)0x0fe4);
+	struct SHTCTL *shtctl = (struct SHTCTL *) *((int *)0x0fe4);
 	struct SHEET *sht = open_console(shtctl, memtotal);
 	struct FIFO32 *fifo = &sht->task->fifo;
 	int i;
@@ -355,6 +379,19 @@ void cmd_start(struct CONSOLE *cons, char *cmdline, int memtotal)
 		fifo32_put(fifo, cmdline[i] + 256);
 	}
 	fifo32_put(fifo, 10 + 256);
+	cons_newline(cons);
+	return;
+}
+
+void cmd_ncst(struct CONSOLE *cons, char *cmdline ,int memtotal)
+{
+	struct TASK *task=open_constask(0,memtotal);
+	struct FIFO32 *fifo=&task->fifo;
+	int i;
+	for(i=5;cmdline[i]!=0;i++){
+		fifo32_put(fifo,cmdline[i]+256);
+	}
+	fifo32_put(fifo,10+256);
 	cons_newline(cons);
 	return;
 }
