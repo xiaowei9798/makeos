@@ -30,7 +30,7 @@ void HariMain(void)
 	int j, x, y;
 	int mmx = -1, mmy = -1, mmx2 = 0;
 	int new_mx = -1, new_my = 0, new_wx = 0x7fffffff, new_wy = 0;
-	struct SHEET *sht = 0, *key_win;
+	struct SHEET *sht = 0, *key_win, *sht2;
 
 	static char keytable0[0x80] = {
 		0, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '^', 0x08, 0,
@@ -410,6 +410,10 @@ void HariMain(void)
 											else
 											{
 												task = sht->task;
+												sheet_updown(sht,-1);   //隐藏命令行窗口
+												keywin_off(key_win);
+												key_win=shtctl->sheets[shtctl->top-1];
+												keywin_on(key_win);
 												io_cli();
 												fifo32_put(&task->fifo, 4);
 												io_sti();
@@ -448,6 +452,12 @@ void HariMain(void)
 			else if (1024 <= i && i <= 2023)
 			{
 				close_constack(taskctl->tasks0 + (i - 1024));  //初始化任务的时候，任务最大个数设定了1000个
+			}
+			else if(2024<=i && i<=2279)
+			{
+				sht2=shtctl->sheets0+(i-2024);
+				memman_free_4k(memman,(int) sht2->buf,256*165);
+				sheet_free(sht2);
 			}
 			// else if (i <= 1)
 			// { /* 光标用定时器 */
