@@ -26,7 +26,7 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 	}
 	file_readfat(fat, (unsigned char *)(ADR_DISKIMG + 0x000200));
 
-	/* プロンプト表示 */
+	/* ?示提示符 */
 	cons_putchar(&cons, '>', 1);
 
 	for (;;)
