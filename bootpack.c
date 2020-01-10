@@ -70,9 +70,9 @@ void HariMain(void)
 
 	init_palette();
 	shtctl = shtctl_init(memman, binfo->vram, binfo->scrnx, binfo->scrny);
-	task_a = task_init(memman);
+	task_a = task_init(memman);  //在任务初始化时生成了两个任务，task  idle 
 	fifo.task = task_a;
-	task_run(task_a, 1, 2);
+	task_run(task_a, 1, 2);   //level, priority
 	*((int *)0x0fe4) = (int)shtctl;
 
 	/* sht_back */
@@ -581,3 +581,5 @@ void close_constack(struct TASK *task)
 	task->flags = 0;
 	return;
 }
+
+

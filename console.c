@@ -97,7 +97,7 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 					cmdline[cons.cur_x / 8 - 2] = 0;
 					cons_newline(&cons);
 					cons_runcmd(cmdline, &cons, fat, memtotal); /* ?行命令*/
-					if (cons.sht== 0)
+					if (cons.sht == 0)
 					{
 						cmd_exit(&cons, fat); //?于不?示窗口的命令行，程序?行完?后直接将其?止
 					}
@@ -454,13 +454,16 @@ int cmd_app(struct CONSOLE *cons, int *fat, char *cmdline)
 			dathrb = *((int *)(p + 0x0014));
 			q = (char *)memman_alloc_4k(memman, segsiz);
 			task->ds_base = (int)q;
-			set_segmdesc(gdt + task->sel / 8 + 1000, finfo->size - 1, (int)p, AR_CODE32_ER + 0x60);
-			set_segmdesc(gdt + task->sel / 8 + 2000, segsiz - 1, (int)q, AR_DATA32_RW + 0x60);
+			// set_segmdesc(gdt + task->sel / 8 + 1000, finfo->size - 1, (int)p, AR_CODE32_ER + 0x60);   //?合mtask任?初始化，task->sel?任?段号
+			// set_segmdesc(gdt + task->sel / 8 + 2000, segsiz - 1, (int)q, AR_DATA32_RW + 0x60);
+			set_segmdesc(task->ldt + 0, finfo->size - 1, (int)p, AR_CODE32_ER + 0x60);
+			set_segmdesc(task->ldt + 1, segsiz - 1, (int)q, AR_DATA32_RW + 0x60);            //将程序的代?段和数据段?建在LDT中
 			for (i = 0; i < datsiz; i++)
 			{
 				q[esp + i] = p[dathrb + i];
 			}
-			start_app(0x1b, task->sel + 1000 * 8, esp, task->sel + 2000 * 8, &(task->tss.esp0));
+			// start_app(0x1b, task->sel + 1000 * 8, esp, task->sel + 2000 * 8, &(task->tss.esp0));
+			start_app(0x1b, 0 * 8 + 4, esp, 1 * 8 + 4, &(task->tss.esp0));        
 			shtctl = (struct SHTCTL *)*((int *)0x0fe4);
 			for (i = 0; i < MAX_SHEETS; i++)
 			{
@@ -497,7 +500,7 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 						 /* 保存のためのPUSHADを強引に書き換える */
 						 /* reg[0] : EDI,   reg[1] : ESI,   reg[2] : EBP,   reg[3] : ESP */
 						 /* reg[4] : EBX,   reg[5] : EDX,   reg[6] : ECX,   reg[7] : EAX */
-	struct FIFO32 *sys_fifo=(struct FIFO32 *) *((int *)0x0fec);
+	struct FIFO32 *sys_fifo = (struct FIFO32 *)*((int *)0x0fec);
 
 	if (edx == 1)
 	{
@@ -620,12 +623,12 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 			{
 				cons->cur_c = -1;
 			}
-			if(i==4)
+			if (i == 4)
 			{
 				timer_cancel(cons->timer);
 				io_cli();
-				fifo32_put(sys_fifo,cons->sht-shtctl->sheets0+2024);   //2024~2279
-				cons->sht=0;
+				fifo32_put(sys_fifo, cons->sht - shtctl->sheets0 + 2024); //2024~2279
+				cons->sht = 0;
 				io_sti();
 			}
 			if (256 <= i && i <= 511)

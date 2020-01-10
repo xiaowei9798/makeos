@@ -135,6 +135,13 @@ color.bim : color.obj a_nask.obj Makefile
 	$(OBJ2BIM) @$(RULEFILE) out:color.bim stack:1k map:color.map color.obj a_nask.obj
 color.hrb : color.bim Makefile
 	$(BIM2HRB) color.bim color.hrb 56k
+
+crack7.bim : crack7.obj  Makefile  
+	$(OBJ2BIM) @$(RULEFILE) out:crack7.bim stack:1k map:crack7.map crack7.obj 
+crack7.hrb : crack7.bim Makefile
+	$(BIM2HRB) crack7.bim crack7.hrb 0k
+
+
 # crack2.hrb : crack2.nas Makefile
 # 	$(NASK) crack2.nas crack2.hrb crack2.lst
 
@@ -143,7 +150,7 @@ color.hrb : color.bim Makefile
 
 haribote.img : ipl10.bin haribote.sys hello.hrb hello2.hrb a.hrb hello3.hrb lines.hrb \
             hello4.hrb hello5.hrb winhelo.hrb winhelo2.hrb winhelo3.hrb stars.hrb clwin.hrb walk.hrb \
-			noodle.hrb beepdown.hrb color.hrb Makefile
+			noodle.hrb beepdown.hrb color.hrb crack7.hrb Makefile
 	$(EDIMG)   imgin:../z_tools/fdimg0at.tek \
 		wbinimg src:ipl10.bin len:512 from:0 to:0 \
 		copy from:haribote.sys to:@: \
@@ -165,10 +172,10 @@ haribote.img : ipl10.bin haribote.sys hello.hrb hello2.hrb a.hrb hello3.hrb line
 		copy from:noodle.hrb to:@: \
 		copy from:beepdown.hrb to:@: \
 		copy from:color.hrb to:@: \
+		copy from:crack7.hrb to:@: \
 		imgout:haribote.img
 
-# ˆê”Ê‹K‘¥
-
+# ????  %??????
 %.gas : %.c bootpack.h Makefile
 	$(CC1) -o $*.gas $*.c
 
