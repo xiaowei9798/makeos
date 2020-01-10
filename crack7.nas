@@ -27,7 +27,7 @@ crackloop:
     JNE     crackloop
 
 fin:
-    MOV     EDX,4
+    MOV     EDX,4      
     INT     0x40
 
 

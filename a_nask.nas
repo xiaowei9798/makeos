@@ -6,6 +6,7 @@
         GLOBAL  _api_putchar
         GLOBAL  _api_end
         GLOBAL  _api_putstr0
+        GLOBAL  _api_putstr1
         GLOBAL  _api_openwin
         GLOBAL  _api_putstrwin
         GLOBAL  _api_boxfilwin
@@ -36,6 +37,15 @@ _api_putstr0:
         PUSH    EBX
         MOV     EDX,2
         MOV     EBX,[ESP+8]
+        INT     0x40
+        POP     EBX
+        RET
+
+_api_putstr1:
+        PUSH    EBX
+        MOV     EDX,3
+        MOV     EBX,[ESP+8]
+        MOV     ECX,[ESP+12]
         INT     0x40
         POP     EBX
         RET
