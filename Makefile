@@ -17,7 +17,7 @@ default :
 haribote.img : haribote/ipl10.bin haribote/haribote.sys Makefile \
 		a/a.hrb hello3/hello3.hrb hello4/hello4.hrb hello5/hello5.hrb \
 		winhelo/winhelo.hrb winhelo2/winhelo2.hrb winhelo3/winhelo3.hrb \
-		stars/stars.hrb \
+		stars/stars.hrb sosu/sosu.hrb sosu2/sosu2.hrb sosu3/sosu3.hrb \
 		lines/lines.hrb walk/walk.hrb noodle/noodle.hrb \
 		beepdown/beepdown.hrb color/color.hrb 
 	$(EDIMG)   imgin:../z_tools/fdimg0at.tek \
@@ -38,6 +38,9 @@ haribote.img : haribote/ipl10.bin haribote/haribote.sys Makefile \
 		copy from:noodle/noodle.hrb to:@: \
 		copy from:beepdown/beepdown.hrb to:@: \
 		copy from:color/color.hrb to:@: \
+		copy from:sosu/sosu.hrb to:@: \
+		copy from:sosu2/sosu2.hrb to:@: \
+		copy from:sosu3/sosu3.hrb to:@: \
 		imgout:haribote.img
 
 # –½—ß
@@ -67,6 +70,9 @@ full :
 	$(MAKE) -C noodle
 	$(MAKE) -C beepdown
 	$(MAKE) -C color
+	$(MAKE) -C sosu
+	$(MAKE) -C sosu2
+	$(MAKE) -C sosu3
 	$(MAKE) haribote.img
 
 run_full :
@@ -105,6 +111,9 @@ clean_full :
 	$(MAKE) -C noodle		clean
 	$(MAKE) -C beepdown		clean
 	$(MAKE) -C color		clean
+	$(MAKE) -C sosu			clean
+	$(MAKE) -C sosu2		clean
+	$(MAKE) -C sosu3		clean
 
 src_only_full :
 	$(MAKE) -C haribote		src_only
@@ -122,6 +131,9 @@ src_only_full :
 	$(MAKE) -C noodle		src_only
 	$(MAKE) -C beepdown		src_only
 	$(MAKE) -C color		src_only
+	$(MAKE) -C sosu			src_only
+	$(MAKE) -C sosu2		src_only
+	$(MAKE) -C sosu3		src_only
 	-$(DEL) haribote.img
 
 refresh :
