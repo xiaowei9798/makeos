@@ -1,0 +1,20 @@
+format:
+	/* 本?中描述?接的方? */
+	code(align:1, logic:0x24,      file:0x24);
+	data(align:4, logic:stack_end, file:code_end);
+
+file:
+	/* ?一?没能写在命令行上
+		??.obj文件和.lib文件 */
+	/* ?外，?个部分也可以用全路径来写 */
+	/* 例：  c:/osask/gg00libc.lib;  */
+	../../z_tools/haribote/harilibc.lib;
+	../../z_tools/haribote/golibc.lib;
+
+label:
+	/* 指定必??接的?? */
+	/* ???指定?目点就可以了 */
+	_HariStartup;
+
+	/* 上述3部分的?序不能??! */
+
