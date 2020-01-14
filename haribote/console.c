@@ -12,12 +12,22 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 	struct CONSOLE cons;
 	struct FILEHANDLE fhandle[8];
 	char cmdline[30];
+	unsigned char *nihongo = (char *)*((int *)0x0fe8);
 	cons.sht = sheet;
 	cons.cur_x = 8;
 	cons.cur_y = 28;
 	cons.cur_c = -1;
 	task->cons = &cons;
-	task->cmdline=cmdline;
+	task->cmdline = cmdline;
+
+	if (nihongo[4096] != 0xff)
+	{
+		task->langmode = 1;
+	}
+	else
+	{
+		task->langmode = 0;
+	}
 
 	// fifo32_init(&task->fifo, 128, fifobuf, task);
 	if (cons.sht != 0)
@@ -79,7 +89,7 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 				if (cons.sht != 0)
 				{
 					// boxfill8(sheet->buf, sheet->bxsize, COL8_000000, cons.cur_x, cons.cur_y, cons.cur_x + 7, cons.cur_y + 15);
-					boxfill8(cons.sht->buf, cons.sht->bxsize, COL8_000000,cons.cur_x, cons.cur_y, cons.cur_x + 7, cons.cur_y + 15);
+					boxfill8(cons.sht->buf, cons.sht->bxsize, COL8_000000, cons.cur_x, cons.cur_y, cons.cur_x + 7, cons.cur_y + 15);
 				}
 				cons.cur_c = -1;
 			}
@@ -245,15 +255,15 @@ void cons_putstr1(struct CONSOLE *cons, char *s, int l)
 
 void cons_runcmd(char *cmdline, struct CONSOLE *cons, int *fat, unsigned int memtotal)
 {
-	if (strcmp(cmdline, "mem") == 0 && cons->sht!=0)
+	if (strcmp(cmdline, "mem") == 0 && cons->sht != 0)
 	{
 		cmd_mem(cons, memtotal);
 	}
-	else if (strcmp(cmdline, "cls") == 0 && cons->sht!=0)
+	else if (strcmp(cmdline, "cls") == 0 && cons->sht != 0)
 	{
 		cmd_cls(cons);
 	}
-	else if (strcmp(cmdline, "dir") == 0 && cons->sht!=0)
+	else if (strcmp(cmdline, "dir") == 0 && cons->sht != 0)
 	{
 		cmd_dir(cons);
 	}
@@ -272,6 +282,10 @@ void cons_runcmd(char *cmdline, struct CONSOLE *cons, int *fat, unsigned int mem
 	else if (strncmp(cmdline, "ncst ", 5) == 0)
 	{
 		cmd_ncst(cons, cmdline, memtotal);
+	}
+	else if (strncmp(cmdline, "langmode ", 9) == 0)
+	{
+		cmd_langmode(cons, cmdline);
 	}
 	else if (cmdline[0] != 0)
 	{
@@ -361,6 +375,21 @@ void cmd_dir(struct CONSOLE *cons)
 // 	cons_newline(cons);
 // 	return;
 // }
+void cmd_langmode(struct CONSOLE *cons, char *cmdline)
+{
+	struct TASK *task = task_now();
+	unsigned char mode = cmdline[9] - '0';
+	if (mode <= 1)
+	{
+		task->langmode = mode;
+	}
+	else
+	{
+		cons_putstr0(cons, "mode number error.\n");
+	}
+	cons_newline(cons);
+	return;
+}
 
 void cmd_exit(struct CONSOLE *cons, int *fat)
 {
@@ -522,7 +551,7 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 	struct FIFO32 *sys_fifo = (struct FIFO32 *)*((int *)0x0fec);
 	struct FILEINFO *finfo;
 	struct FILEHANDLE *fh;
-	struct MEMMAN *memman=(struct MEMMAN *)MEMMAN_ADDR;
+	struct MEMMAN *memman = (struct MEMMAN *)MEMMAN_ADDR;
 
 	if (edx == 1)
 	{
@@ -719,15 +748,15 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 		}
 	}
 	else if (edx == 22)
-	{//??文件
+	{ //??文件
 		fh = (struct FILEHANDLE *)eax;
 		memman_free_4k(memman, (int)fh->buf, fh->size);
 		fh->buf = 0;
 	}
 	else if (edx == 23)
-	{//定位文件
+	{ //定位文件
 		fh = (struct FILEHANDLE *)eax;
-		if (ecx == 0)  //定位起点在文件??
+		if (ecx == 0) //定位起点在文件??
 		{
 			fh->pos = ebx;
 		}
@@ -735,7 +764,7 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 		{
 			fh->pos += ebx;
 		}
-		else if (ecx == 2)//定位起点?文件末尾
+		else if (ecx == 2) //定位起点?文件末尾
 		{
 			fh->pos = fh->size + ebx;
 		}
@@ -749,13 +778,13 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 		}
 	}
 	else if (edx == 24)
-	{//?取文件大小
+	{ //?取文件大小
 		fh = (struct FILEHANDLE *)eax;
-		if (ecx == 0)  //普通文件大小
+		if (ecx == 0) //普通文件大小
 		{
 			reg[7] = fh->size;
 		}
-		else if (ecx == 1)  
+		else if (ecx == 1)
 		{
 			reg[7] = fh->pos;
 		}
@@ -778,20 +807,23 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 		}
 		reg[7] = i;
 	}
-	else if(edx==26)
+	else if (edx == 26)
 	{
-		i=0;
-		for(;;){
-			*((char *) ebx+ds_base+i)=task->cmdline[i];
-			if(task->cmdline[i]==0){
+		i = 0;
+		for (;;)
+		{
+			*((char *)ebx + ds_base + i) = task->cmdline[i];
+			if (task->cmdline[i] == 0)
+			{
 				break;
 			}
-			if(i>=ecx){
+			if (i >= ecx)
+			{
 				break;
 			}
 			i++;
 		}
-		reg[7]=i;
+		reg[7] = i;
 	}
 	return 0;
 }

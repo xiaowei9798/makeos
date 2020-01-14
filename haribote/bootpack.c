@@ -31,6 +31,11 @@ void HariMain(void)
 	int mmx = -1, mmy = -1, mmx2 = 0;
 	int new_mx = -1, new_my = 0, new_wx = 0x7fffffff, new_wy = 0;
 	struct SHEET *sht = 0, *key_win, *sht2;
+	
+	int *fat;
+	unsigned char *nihongo;
+	struct FILEINFO *finfo;
+	extern char hankaku[4096];
 
 	static char keytable0[0x80] = {
 		0, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '^', 0x08, 0,
@@ -74,6 +79,7 @@ void HariMain(void)
 	fifo.task = task_a;
 	task_run(task_a, 1, 2);   //level, priority
 	*((int *)0x0fe4) = (int)shtctl;
+	task->langmode=0;
 
 	/* sht_back */
 	sht_back = sheet_alloc(shtctl);
@@ -135,10 +141,27 @@ void HariMain(void)
 	// 		memtotal / (1024 * 1024), memman_total(memman) / 1024);
 	// putfonts8_asc_sht(sht_back, 0, 32, COL8_FFFFFF, COL8_008484, s, 40);
 
+	//载入nihongo.fnt字符库
+	nihongo=(unsigned char *) memman_alloc_4k(memman,16*256+32*94*47);  
+	fat=(int *) memman_alloc_4k(memman,4*2880);
+	file_readfat(fat,(unsigned char *)(ADR_DISKIMG + 0x000200));
+	finfo=file_search("nihongo.fnt",(struct FILEINFO *)(ADR_DISKIMG + 0x002600),224);
+	if(finfo !=0){
+		file_loadfile(finfo->clustno,finfo->size,nihongo,fat,(char *)(ADR_DISKIMG + 0x003e00));
+	}else{
+		for(i=0;i<16*256;i++){
+			nihongo[i]=hankaku[i];
+		}
+		for(i=16*256;i<16*256+32*94*47;i++){
+			nihongo[i]=0xff;
+		}
+	}
+	*((int *)0x0fe8)=(int) nihongo;
+	memman_free_4k(memman,(int)fat,4*2880);
+
 	/* 进行初始设定，为了避免和键盘当前状态冲突 */
 	fifo32_put(&keycmd, KEYCMD_LED);
 	fifo32_put(&keycmd, key_leds);
-
 	for (;;)
 	{
 		if (fifo32_status(&keycmd) > 0 && keycmd_wait < 0)

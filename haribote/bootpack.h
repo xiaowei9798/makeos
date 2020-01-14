@@ -221,6 +221,7 @@ struct TASK {
 	struct FILEHANDLE *fhandle;  //存放程序打开文件的信息
 	int *fat;  
 	char *cmdline;
+	char langmode;
 };
 struct FILEHANDLE{
 	char *buf;  //缓冲区地址
@@ -278,6 +279,7 @@ void hrb_api_linewin(struct SHEET *sht,int x0,int y0,int x1,int y1,int col);
 void cmd_exit(struct CONSOLE *cons, int *fat);
 void cmd_start(struct CONSOLE *cons, char *cmdline, int memtotal);
 void cmd_ncst(struct CONSOLE *cons, char *cmdline ,int memtotal);
+void cmd_langmode(struct CONSOLE *cons,char *cmdline);
 
 /* fife.c */
 struct FILEINFO
