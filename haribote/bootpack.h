@@ -220,6 +220,7 @@ struct TASK {
 	int ds_base,cons_stack;
 	struct FILEHANDLE *fhandle;  //存放程序打开文件的信息
 	int *fat;  
+	char *cmdline;
 };
 struct FILEHANDLE{
 	char *buf;  //缓冲区地址

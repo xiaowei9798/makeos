@@ -17,9 +17,10 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 	cons.cur_y = 28;
 	cons.cur_c = -1;
 	task->cons = &cons;
+	task->cmdline=cmdline;
 
 	// fifo32_init(&task->fifo, 128, fifobuf, task);
-	if (sheet != 0)
+	if (cons.sht != 0)
 	{ //因?所有的命令行任?的eip都指向console_task,所以?于不?示命令行窗口的禁用一些没必要的?理
 		cons.timer = timer_alloc();
 		timer_init(cons.timer, &task->fifo, 1);
@@ -77,7 +78,8 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 			{ /* 光?OFF */
 				if (cons.sht != 0)
 				{
-					boxfill8(sheet->buf, sheet->bxsize, COL8_000000, cons.cur_x, cons.cur_y, cons.cur_x + 7, cons.cur_y + 15);
+					// boxfill8(sheet->buf, sheet->bxsize, COL8_000000, cons.cur_x, cons.cur_y, cons.cur_x + 7, cons.cur_y + 15);
+					boxfill8(cons.sht->buf, cons.sht->bxsize, COL8_000000,cons.cur_x, cons.cur_y, cons.cur_x + 7, cons.cur_y + 15);
 				}
 				cons.cur_c = -1;
 			}
@@ -128,9 +130,10 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 			{
 				if (cons.cur_c >= 0)
 				{
-					boxfill8(sheet->buf, sheet->bxsize, cons.cur_c, cons.cur_x, cons.cur_y, cons.cur_x + 7, cons.cur_y + 15);
+					// boxfill8(cons.sheet->buf, sheet->bxsize, cons.cur_c, cons.cur_x, cons.cur_y, cons.cur_x + 7, cons.cur_y + 15);
+					boxfill8(cons.sht->buf, cons.sht->bxsize, cons.cur_c, cons.cur_x, cons.cur_y, cons.cur_x + 7, cons.cur_y + 15);
 				}
-				sheet_refresh(sheet, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
+				sheet_refresh(cons.sht, cons.cur_x, cons.cur_y, cons.cur_x + 8, cons.cur_y + 16);
 			}
 		}
 	}
@@ -242,22 +245,22 @@ void cons_putstr1(struct CONSOLE *cons, char *s, int l)
 
 void cons_runcmd(char *cmdline, struct CONSOLE *cons, int *fat, unsigned int memtotal)
 {
-	if (strcmp(cmdline, "mem") == 0)
+	if (strcmp(cmdline, "mem") == 0 && cons->sht!=0)
 	{
 		cmd_mem(cons, memtotal);
 	}
-	else if (strcmp(cmdline, "cls") == 0)
+	else if (strcmp(cmdline, "cls") == 0 && cons->sht!=0)
 	{
 		cmd_cls(cons);
 	}
-	else if (strcmp(cmdline, "dir") == 0)
+	else if (strcmp(cmdline, "dir") == 0 && cons->sht!=0)
 	{
 		cmd_dir(cons);
 	}
-	else if (strncmp(cmdline, "type ", 5) == 0)
-	{
-		cmd_type(cons, fat, cmdline);
-	}
+	// else if (strncmp(cmdline, "type ", 5) == 0)
+	// {
+	// 	cmd_type(cons, fat, cmdline);
+	// }
 	else if (strcmp(cmdline, "exit") == 0)
 	{
 		cmd_exit(cons, fat);
@@ -337,27 +340,27 @@ void cmd_dir(struct CONSOLE *cons)
 	return;
 }
 
-void cmd_type(struct CONSOLE *cons, int *fat, char *cmdline)
-{
-	struct MEMMAN *memman = (struct MEMMAN *)MEMMAN_ADDR;
-	struct FILEINFO *finfo = file_search(cmdline + 5, (struct FILEINFO *)(ADR_DISKIMG + 0x002600), 224);
-	char *p;
-	if (finfo != 0)
-	{
-		/* ファイルが見つかった場合 */
-		p = (char *)memman_alloc_4k(memman, finfo->size);
-		file_loadfile(finfo->clustno, finfo->size, p, fat, (char *)(ADR_DISKIMG + 0x003e00));
-		cons_putstr1(cons, p, finfo->size);
-		memman_free_4k(memman, (int)p, finfo->size);
-	}
-	else
-	{
-		/* ファイルが見つからなかった場合 */
-		cons_putstr0(cons, "File not found.\n");
-	}
-	cons_newline(cons);
-	return;
-}
+// void cmd_type(struct CONSOLE *cons, int *fat, char *cmdline)
+// {
+// 	struct MEMMAN *memman = (struct MEMMAN *)MEMMAN_ADDR;
+// 	struct FILEINFO *finfo = file_search(cmdline + 5, (struct FILEINFO *)(ADR_DISKIMG + 0x002600), 224);
+// 	char *p;
+// 	if (finfo != 0)
+// 	{
+// 		/* ファイルが見つかった場合 */
+// 		p = (char *)memman_alloc_4k(memman, finfo->size);
+// 		file_loadfile(finfo->clustno, finfo->size, p, fat, (char *)(ADR_DISKIMG + 0x003e00));
+// 		cons_putstr1(cons, p, finfo->size);
+// 		memman_free_4k(memman, (int)p, finfo->size);
+// 	}
+// 	else
+// 	{
+// 		/* ファイルが見つからなかった場合 */
+// 		cons_putstr0(cons, "File not found.\n");
+// 	}
+// 	cons_newline(cons);
+// 	return;
+// }
 
 void cmd_exit(struct CONSOLE *cons, int *fat)
 {
@@ -774,6 +777,21 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 			fh->pos++;
 		}
 		reg[7] = i;
+	}
+	else if(edx==26)
+	{
+		i=0;
+		for(;;){
+			*((char *) ebx+ds_base+i)=task->cmdline[i];
+			if(task->cmdline[i]==0){
+				break;
+			}
+			if(i>=ecx){
+				break;
+			}
+			i++;
+		}
+		reg[7]=i;
 	}
 	return 0;
 }
