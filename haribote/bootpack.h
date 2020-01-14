@@ -218,6 +218,13 @@ struct TASK {
 	struct SEGMENT_DESCRIPTOR ldt[2];
 	struct CONSOLE *cons;
 	int ds_base,cons_stack;
+	struct FILEHANDLE *fhandle;  //存放程序打开文件的信息
+	int *fat;  
+};
+struct FILEHANDLE{
+	char *buf;  //缓冲区地址
+	int size;   //文件大小
+	int pos;    //文件的定位位置
 };
 struct TASKLEVEL {
 	int running; /* ���삵�Ă���^�X�N�̐� */

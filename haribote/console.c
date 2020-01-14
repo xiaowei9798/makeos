@@ -10,6 +10,7 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 	struct MEMMAN *memman = (struct MEMMAN *)MEMMAN_ADDR;
 	int i, /* fifobuf[128], */ *fat = (int *)memman_alloc_4k(memman, 4 * 2880);
 	struct CONSOLE cons;
+	struct FILEHANDLE fhandle[8];
 	char cmdline[30];
 	cons.sht = sheet;
 	cons.cur_x = 8;
@@ -28,6 +29,13 @@ void console_task(struct SHEET *sheet, unsigned int memtotal)
 
 	/* ?示提示符 */
 	cons_putchar(&cons, '>', 1);
+
+	for (i = 0; i < 8; i++)
+	{
+		fhandle[i].buf = 0;
+	}
+	task->fhandle = fhandle;
+	task->fat = fat;
 
 	for (;;)
 	{
@@ -457,13 +465,13 @@ int cmd_app(struct CONSOLE *cons, int *fat, char *cmdline)
 			// set_segmdesc(gdt + task->sel / 8 + 1000, finfo->size - 1, (int)p, AR_CODE32_ER + 0x60);   //?合mtask任?初始化，task->sel?任?段号
 			// set_segmdesc(gdt + task->sel / 8 + 2000, segsiz - 1, (int)q, AR_DATA32_RW + 0x60);
 			set_segmdesc(task->ldt + 0, finfo->size - 1, (int)p, AR_CODE32_ER + 0x60);
-			set_segmdesc(task->ldt + 1, segsiz - 1, (int)q, AR_DATA32_RW + 0x60);            //将程序的代?段和数据段?建在LDT中
+			set_segmdesc(task->ldt + 1, segsiz - 1, (int)q, AR_DATA32_RW + 0x60); //将程序的代?段和数据段?建在LDT中
 			for (i = 0; i < datsiz; i++)
 			{
 				q[esp + i] = p[dathrb + i];
 			}
 			// start_app(0x1b, task->sel + 1000 * 8, esp, task->sel + 2000 * 8, &(task->tss.esp0));
-			start_app(0x1b, 0 * 8 + 4, esp, 1 * 8 + 4, &(task->tss.esp0));        
+			start_app(0x1b, 0 * 8 + 4, esp, 1 * 8 + 4, &(task->tss.esp0));
 			shtctl = (struct SHTCTL *)*((int *)0x0fe4);
 			for (i = 0; i < MAX_SHEETS; i++)
 			{
@@ -471,6 +479,14 @@ int cmd_app(struct CONSOLE *cons, int *fat, char *cmdline)
 				if ((sht->flags & 0x10) != 0 && sht->task == task)
 				{
 					sheet_free(sht);
+				}
+			}
+			for (i = 0; i < 8; i++)
+			{ //将未??的文件??
+				if (task->fhandle[i].buf != 0)
+				{
+					memman_free_4k(memman, (int)task->fhandle[i].buf, task->fhandle[i].size);
+					task->fhandle[i].buf = 0;
 				}
 			}
 			timer_cancelall(&task->fifo);
@@ -501,6 +517,9 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 						 /* reg[0] : EDI,   reg[1] : ESI,   reg[2] : EBP,   reg[3] : ESP */
 						 /* reg[4] : EBX,   reg[5] : EDX,   reg[6] : ECX,   reg[7] : EAX */
 	struct FIFO32 *sys_fifo = (struct FIFO32 *)*((int *)0x0fec);
+	struct FILEINFO *finfo;
+	struct FILEHANDLE *fh;
+	struct MEMMAN *memman=(struct MEMMAN *)MEMMAN_ADDR;
 
 	if (edx == 1)
 	{
@@ -671,6 +690,90 @@ int *hrb_api(int edi, int esi, int ebp, int esp, int ebx, int edx, int ecx, int 
 			i = io_in8(0x61);
 			io_out8(0x61, (i | 0x03) & 0x0f);
 		}
+	}
+	else if (edx == 21)
+	{ //打?文件
+		for (i = 0; i < 8; i++)
+		{
+			if (task->fhandle[i].buf == 0)
+			{
+				break;
+			}
+		}
+		fh = &task->fhandle[i];
+		reg[7] = 0;
+		if (i < 8)
+		{
+			finfo = file_search((char *)ebx + ds_base, (struct FILEINFO *)(ADR_DISKIMG + 0x002600), 224);
+			if (finfo != 0)
+			{
+				reg[7] = (int)fh;
+				fh->buf = (char *)memman_alloc_4k(memman, finfo->size);
+				fh->size = finfo->size;
+				fh->pos = 0;
+				file_loadfile(finfo->clustno, finfo->size, fh->buf, task->fat, (char *)(ADR_DISKIMG + 0x003e00));
+			}
+		}
+	}
+	else if (edx == 22)
+	{//??文件
+		fh = (struct FILEHANDLE *)eax;
+		memman_free_4k(memman, (int)fh->buf, fh->size);
+		fh->buf = 0;
+	}
+	else if (edx == 23)
+	{//定位文件
+		fh = (struct FILEHANDLE *)eax;
+		if (ecx == 0)  //定位起点在文件??
+		{
+			fh->pos = ebx;
+		}
+		else if (ecx == 1) //定位起点?当前??位置
+		{
+			fh->pos += ebx;
+		}
+		else if (ecx == 2)//定位起点?文件末尾
+		{
+			fh->pos = fh->size + ebx;
+		}
+		if (fh->pos < 0)
+		{
+			fh->pos = 0;
+		}
+		if (fh->pos > fh->size)
+		{
+			fh->pos = fh->size;
+		}
+	}
+	else if (edx == 24)
+	{//?取文件大小
+		fh = (struct FILEHANDLE *)eax;
+		if (ecx == 0)  //普通文件大小
+		{
+			reg[7] = fh->size;
+		}
+		else if (ecx == 1)  
+		{
+			reg[7] = fh->pos;
+		}
+		else if (ecx == 2)
+		{
+			reg[7] = fh->pos - fh->size;
+		}
+	}
+	else if (edx == 25)
+	{ //文件?取
+		fh = (struct FILEHANDLE *)eax;
+		for (i = 0; i < ecx; i++)
+		{
+			if (fh->pos == fh->size)
+			{
+				break;
+			}
+			*((char *)ebx + ds_base + i) = fh->buf[fh->pos];
+			fh->pos++;
+		}
+		reg[7] = i;
 	}
 	return 0;
 }
