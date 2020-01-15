@@ -45,6 +45,7 @@ haribote.img : haribote/ipl10.bin haribote/haribote.sys Makefile \
 		copy from:type/type.hrb to:@: \
 		copy from:iroha/iroha.hrb to:@: \
 		copy from:nihongo/nihongo.fnt to:@: \
+		copy from:euc.txt to:@: \
 		imgout:haribote.img
 
 # –½—ß
