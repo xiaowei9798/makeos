@@ -23,7 +23,7 @@ void HariMain(void)
 	struct MEMMAN *memman = (struct MEMMAN *)MEMMAN_ADDR;
 	unsigned char *buf_back, buf_mouse[256] /* ,*buf_win , *buf_cons[2] */;
 	struct SHEET *sht_back, *sht_mouse /* ,*sht_win , *sht_cons[2]  */;
-	struct TASK *task_a /* , *task_cons[2] */, *task;
+	struct TASK *task_a, *task  /* , *task_cons[2] */;
 	// struct TIMER *timer;
 	// struct CONSOLE *cons;
 	*((int *)0x0fec) = (int)&fifo;
@@ -147,7 +147,8 @@ void HariMain(void)
 	file_readfat(fat,(unsigned char *)(ADR_DISKIMG + 0x000200));
 	finfo=file_search("nihongo.fnt",(struct FILEINFO *)(ADR_DISKIMG + 0x002600),224);
 	if(finfo !=0){
-		file_loadfile(finfo->clustno,finfo->size,nihongo,fat,(char *)(ADR_DISKIMG + 0x003e00));
+		i=finfo->size;
+		nihongo=file_loadfile2(finfo->clustno,&i,fat); //将压缩文件载入内存
 	}else{
 		for(i=0;i<16*256;i++){
 			nihongo[i]=hankaku[i];

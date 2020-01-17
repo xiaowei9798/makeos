@@ -36,6 +36,28 @@ void file_loadfile(int clustno, int size, char *buf, int *fat, char *img)
 	return;
 }
 
+char *file_loadfile2(int clustno, int *psize, int *fat)
+{   //将压缩文件解压缩后载入内存
+	int size = *psize, size2;
+	struct MEMMAN *memman = (struct MEMMAN *)MEMMAN_ADDR;
+	char *buf, *buf2;
+	buf = (char *)memman_alloc_4k(memman, size);
+	file_loadfile(clustno, size, buf, fat, (char *)(ADR_DISKIMG + 0x003e00));
+	if (size > 17)
+	{
+		size2 = tek_getsize(buf);  //如果文件符合tek格式，返回解压缩后文件的大小
+		if (size2 > 0)
+		{
+			buf2 = (char *)memman_alloc_4k(memman, size2);
+			tek_decomp(buf, buf2, size2); //执行解压缩
+			memman_free_4k(memman, (int)buf, size); //清空之前保存的压缩文件
+			buf = buf2;
+			*psize = size2;
+		}
+	}
+	return buf;
+}
+
 struct FILEINFO *file_search(char *name, struct FILEINFO *finfo, int max)
 {
 	int i, j;
