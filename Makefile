@@ -20,7 +20,8 @@ haribote.img : haribote/ipl10.bin haribote/haribote.sys Makefile \
 		stars/stars.hrb sosu/sosu.hrb sosu2/sosu2.hrb sosu3/sosu3.hrb \
 		lines/lines.hrb walk/walk.hrb noodle/noodle.hrb typeipl/typeipl.hrb \
 		beepdown/beepdown.hrb color/color.hrb type/type.hrb iroha/iroha.hrb \
-		chklang/chklang.hrb bball/bball.hrb invader/invader.hrb
+		chklang/chklang.hrb bball/bball.hrb invader/invader.hrb calc/calc.hrb \
+
 	$(EDIMG)   imgin:../z_tools/fdimg0at.tek \
 		wbinimg src:haribote/ipl10.bin len:512 from:0 to:0 \
 		copy from:haribote/haribote.sys to:@: \
@@ -50,6 +51,7 @@ haribote.img : haribote/ipl10.bin haribote/haribote.sys Makefile \
 		copy from:chklang/chklang.hrb to:@: \
 		copy from:bball/bball.hrb to:@: \
 		copy from:invader/invader.hrb to:@: \
+		copy from:calc/calc.hrb to:@: \
 		imgout:haribote.img
 
 # ����
