@@ -7,12 +7,12 @@ IMGTOL   = $(TOOLPATH)imgtol.com
 COPY     = copy
 DEL      = del
 
-# àÒ??ì
+# ï¿½ï¿½??ï¿½ï¿½
 
 default :
 	$(MAKE) haribote.img
 
-# •¶Œ¶¬??
+# ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½??
 
 haribote.img : haribote/ipl10.bin haribote/haribote.sys Makefile \
 		a/a.hrb hello3/hello3.hrb hello4/hello4.hrb hello5/hello5.hrb \
@@ -20,7 +20,7 @@ haribote.img : haribote/ipl10.bin haribote/haribote.sys Makefile \
 		stars/stars.hrb sosu/sosu.hrb sosu2/sosu2.hrb sosu3/sosu3.hrb \
 		lines/lines.hrb walk/walk.hrb noodle/noodle.hrb typeipl/typeipl.hrb \
 		beepdown/beepdown.hrb color/color.hrb type/type.hrb iroha/iroha.hrb \
-		chklang/chklang.hrb bball/bball.hrb
+		chklang/chklang.hrb bball/bball.hrb invader/invader.hrb
 	$(EDIMG)   imgin:../z_tools/fdimg0at.tek \
 		wbinimg src:haribote/ipl10.bin len:512 from:0 to:0 \
 		copy from:haribote/haribote.sys to:@: \
@@ -49,9 +49,10 @@ haribote.img : haribote/ipl10.bin haribote/haribote.sys Makefile \
 		copy from:euc.txt to:@: \
 		copy from:chklang/chklang.hrb to:@: \
 		copy from:bball/bball.hrb to:@: \
+		copy from:invader/invader.hrb to:@: \
 		imgout:haribote.img
 
-# –½—ß
+# ï¿½ï¿½ï¿½ï¿½
 
 run :
 	$(MAKE) haribote.img
@@ -102,7 +103,7 @@ run_os :
 	$(MAKE) run
 
 clean :
-# ?—¢“IMakefile’†•s¶¬??•¶ŒCˆöŸ?—¢“Iclean•s?s”C‰½‘€ì
+# ?ï¿½ï¿½ï¿½IMakefileï¿½ï¿½ï¿½sï¿½ï¿½ï¿½ï¿½??ï¿½ï¿½ï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½ï¿½?ï¿½ï¿½ï¿½Icleanï¿½s?ï¿½sï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 src_only :
 	$(MAKE) clean
@@ -164,9 +165,9 @@ refresh :
 	$(MAKE) clean_full
 	-$(DEL) haribote.img
 
-# make clean_full ´œŠ—L“I??•¶Œ
-# make src_only_full ´œŠ—L“I??•¶Œ˜aÅ?“I¶¬•¨
-# ˆöŸmake refresh@‰ÂˆÈ’¼Ú?s make run §•s—p?s–Õ?“Imake run_full
+# make clean_full ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Lï¿½I??ï¿½ï¿½ï¿½ï¿½
+# make src_only_full ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Lï¿½I??ï¿½ï¿½ï¿½ï¿½ï¿½aï¿½ï¿½?ï¿½Iï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+# ï¿½ï¿½ï¿½ï¿½make refreshï¿½@ï¿½ÂˆÈ’ï¿½ï¿½ï¿½?ï¿½s make run ï¿½ï¿½ï¿½sï¿½p?ï¿½sï¿½ï¿½?ï¿½Imake run_full
 
 
 
